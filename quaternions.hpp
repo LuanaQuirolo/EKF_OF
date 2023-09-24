@@ -12,9 +12,9 @@
     #define PI 3.14159265358979f
 #endif
 
-//#include <math.h>
+#include <math.h>
 //#include <stdio.h>
-#include <cmath>
+//#include <cmath>
 
 typedef struct quaternion{
     float q1;

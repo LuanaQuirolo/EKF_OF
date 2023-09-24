@@ -1,4 +1,5 @@
 #include "quaternions.hpp"
+#include "matrix.hpp"
 #include <stdio.h>
 #include <iostream>
 using namespace std;
