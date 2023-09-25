@@ -8,7 +8,7 @@
 #ifndef EKF_H_
 #define EKF_H_
 
-#include <cmath>
+#include <math.h>
 #define N_STATES 18
 #define N_OBS_00 6
 #define N_OBS_01 8

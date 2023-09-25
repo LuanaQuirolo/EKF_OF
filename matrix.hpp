@@ -1,12 +1,94 @@
 /***************************************************************
- *                  Matrices
- *                  Creado: 10 sep. 2023
+ *                  Matrices: Taken from 
+ *          https://github.com/simondlevy/TinyEKF
+ *                  Creado: 24 sep. 2023
  *                  Autor: Luana Quirolo
  *                  Padron: 102102
 ****************************************************************/
 
 #ifndef MATRIX_H_
 #define MATRIX_H_
+#include <math.h>
+
+/* Cholesky-decomposition matrix-inversion code, adapated from
+   http://jean-pierre.moreau.pagesperso-orange.fr/Cplus/choles_cpp.txt */
+
+
+static int choldc1(double * a, double * p, int n) {
+    int i,j,k;
+    double sum;
+
+    for (i = 0; i < n; i++) {
+        for (j = i; j < n; j++) {
+            sum = a[i*n+j];
+            for (k = i - 1; k >= 0; k--) {
+                sum -= a[i*n+k] * a[j*n+k];
+            }
+            if (i == j) {
+                if (sum <= 0) {
+                    return 1; /* error */
+                }
+                p[i] = sqrt(sum);
+            }
+            else {
+                a[j*n+i] = sum / p[i];
+            }
+        }
+    }
+
+    return 0; /* success */
+}
+
+static int choldcsl(double * A, double * a, double * p, int n) 
+{
+    int i,j,k; double sum;
+    for (i = 0; i < n; i++) 
+        for (j = 0; j < n; j++) 
+            a[i*n+j] = A[i*n+j];
+    if (choldc1(a, p, n)) return 1;
+    for (i = 0; i < n; i++) {
+        a[i*n+i] = 1 / p[i];
+        for (j = i + 1; j < n; j++) {
+            sum = 0;
+            for (k = i; k < j; k++) {
+                sum -= a[j*n+k] * a[k*n+i];
+            }
+            a[j*n+i] = sum / p[j];
+        }
+    }
+
+    return 0; /* success */
+}
+
+
+static int cholsl(double * A, double * a, double * p, int n) 
+{
+    int i,j,k;
+    if (choldcsl(A,a,p,n)) return 1;
+    for (i = 0; i < n; i++) {
+        for (j = i + 1; j < n; j++) {
+            a[i*n+j] = 0.0;
+        }
+    }
+    for (i = 0; i < n; i++) {
+        a[i*n+i] *= a[i*n+i];
+        for (k = i + 1; k < n; k++) {
+            a[i*n+i] += a[k*n+i] * a[k*n+i];
+        }
+        for (j = i + 1; j < n; j++) {
+            for (k = j; k < n; k++) {
+                a[i*n+j] += a[k*n+i] * a[k*n+j];
+            }
+        }
+    }
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < i; j++) {
+            a[i*n+j] = a[j*n+i];
+        }
+    }
+
+    return 0; /* success */
+}
 
 // Set all components from matrix A to zero
 static void zeros(double * a, int m, int n)
@@ -82,7 +164,7 @@ static void sub(double * a, double * b, double * c, int n)
 }
 
 /* -A <- A */
-static void negate(double * a, int m, int n)
+static void mat_negate(double * a, int m, int n)
 {        
     int i, j;
 
