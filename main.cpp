@@ -1,5 +1,6 @@
 #include "quaternions.hpp"
 #include "matrix.hpp"
+#include "EKF.hpp"
 #include <stdio.h>
 #include <iostream>
 using namespace std;
@@ -15,19 +16,17 @@ int main(){
     */
     int size = 3;
     double P[size][size];
-    double V[size];
+    //double V[size];
     double R[size];
     zeros(*P, size, size);
-    zeros(V, size, 1);
+    //zeros(V, size, 1);
     zeros(R, size, 1);
     P[0][0] = 3;
     P[1][1] = 3;
     P[2][2] = 3;
-    V[0] = 1;
-    V[1] = 2;
-    V[2] = 3;
-    cholsl(*P, *P, V, size);
-    mulvec(*P, V, R, size, size);
+    double V[] = { 1.0, 2.5, 3.7 }; 
+    //cholsl(*P, *P, V, size);
+    //mulvec(*P, V, R, size, size);
     for (int i = 0; i < size; i++){
         for (int j = 0; j < size; j++){
             std::cout << (P[i][j]) << " ";
