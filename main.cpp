@@ -36,8 +36,10 @@ int main(){
         std::cout << std::endl;
     };  
     for (int i = 0; i < size; i++){
-        std::cout << (filtro.g)[i] << std::endl;
+        break;
     }; 
+    std::cout << (filtro.g).q1 << std::endl;
+    std::cout << (filtro.g).q4 << std::endl;
     std::cout << (int)(filtro.Npix) << std::endl;   
     return 0;
 }

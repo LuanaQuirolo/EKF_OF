@@ -5,9 +5,10 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     (*filtro).N =  N_STATES; // Cantidad de estados
     (*filtro).beta = false; // Indica si hay una lectura nueva del OFS
     (*filtro).gamma = false; // Indica si hay una lectura nueva del sensor de distancia
-    (*filtro).g[0] = 0.0;
-    (*filtro).g[1] = 0.0;
-    (*filtro).g[2] = 9.81;
+    (*filtro).g.q1 = 0.0;
+    (*filtro).g.q2 = 0.0;
+    (*filtro).g.q3 = 0.0;
+    (*filtro).g.q4 = 9.81;
     (*filtro).M00 = N_OBS_00; // Cantidad de observaciones con beta=gamma=0
     (*filtro).M01 = N_OBS_01; // Cantidad de observaciones con beta=0, gamma=1
     (*filtro).M10 = N_OBS_10; // Cantidad de observaciones con beta=1, gamma=0

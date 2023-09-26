@@ -8,13 +8,7 @@
 #ifndef QUATERNIONS_H_
 #define QUATERNIONS_H_
 
-#ifndef PI  
-    #define PI 3.14159265358979f
-#endif
-
 #include <math.h>
-//#include <stdio.h>
-//#include <cmath>
 
 typedef struct quaternion{
     float q1;

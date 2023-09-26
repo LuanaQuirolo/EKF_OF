@@ -11,6 +11,7 @@
 #include <math.h>
 #include <stdio.h>
 #include "matrix.hpp"
+#include "quaternions.hpp"
 
 #define N_STATES 19
 #define N_OBS_00 6
@@ -38,7 +39,7 @@ typedef struct ofs_ekf {
     uint8_t N; // Cantidad de estados
     bool beta; // Indica si hay una lectura nueva del OFS
     bool gamma; // Indica si hay una lectura nueva del sensor de distancia
-    double g[3]; 
+    quaternion_t g; 
     uint8_t M00; // Cantidad de observaciones con beta=gamma=0
     uint8_t M01; // Cantidad de observaciones con beta=0, gamma=1
     uint8_t M10; // Cantidad de observaciones con beta=1, gamma=0
