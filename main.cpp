@@ -24,17 +24,20 @@ int main(){
     P[0][0] = 3;
     P[1][1] = 3;
     P[2][2] = 3;
-    double V[] = { 1.0, 2.5, 3.7 }; 
+    ofs_ekf_t filtro;
+    ofs_ekf_init(&filtro);
+    filtro.Npix = 35;
     //cholsl(*P, *P, V, size);
     //mulvec(*P, V, R, size, size);
     for (int i = 0; i < size; i++){
         for (int j = 0; j < size; j++){
-            std::cout << (P[i][j]) << " ";
+            std::cout << ((filtro.cov)[i][j]) << " ";
         };
         std::cout << std::endl;
     };  
     for (int i = 0; i < size; i++){
-        std::cout << V[i] << std::endl;
-    };    
+        std::cout << (filtro.g)[i] << std::endl;
+    }; 
+    std::cout << (int)(filtro.Npix) << std::endl;   
     return 0;
 }
