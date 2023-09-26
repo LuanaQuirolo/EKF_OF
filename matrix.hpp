@@ -14,7 +14,7 @@
    http://jean-pierre.moreau.pagesperso-orange.fr/Cplus/choles_cpp.txt */
 
 
-static int choldc1(double * a, double * p, int n) {
+static inline int choldc1(double * a, double * p, int n) {
     int i,j,k;
     double sum;
 
@@ -39,7 +39,7 @@ static int choldc1(double * a, double * p, int n) {
     return 0; /* success */
 }
 
-static int choldcsl(double * A, double * a, double * p, int n) 
+static inline int choldcsl(double * A, double * a, double * p, int n) 
 {
     int i,j,k; double sum;
     for (i = 0; i < n; i++) 
@@ -61,7 +61,7 @@ static int choldcsl(double * A, double * a, double * p, int n)
 }
 
 
-static int cholsl(double * A, double * a, double * p, int n) 
+static inline int cholsl(double * A, double * a, double * p, int n) 
 {
     int i,j,k;
     if (choldcsl(A,a,p,n)) return 1;
@@ -91,7 +91,7 @@ static int cholsl(double * A, double * a, double * p, int n)
 }
 
 // Set all components from matrix A to zero
-static void zeros(double * a, int m, int n)
+static inline void zeros(double * a, int m, int n)
 {
     int j;
     for (j=0; j<m*n; ++j)
@@ -99,7 +99,7 @@ static void zeros(double * a, int m, int n)
 }
 
 /* C <- A * B */
-static void mulmat(double * a, double * b, double * c, int arows, int acols, int bcols)
+static inline void mulmat(double * a, double * b, double * c, int arows, int acols, int bcols)
 {
     int i, j,l;
 
@@ -112,7 +112,7 @@ static void mulmat(double * a, double * b, double * c, int arows, int acols, int
 }
 
 /* Y <- A * X */
-static void mulvec(double * a, double * x, double * y, int m, int n)
+static inline void mulvec(double * a, double * x, double * y, int m, int n)
 {
     int i, j;
 
@@ -124,7 +124,7 @@ static void mulvec(double * a, double * x, double * y, int m, int n)
 }
 
 /* trans(A) <- A */
-static void transpose(double * a, double * at, int m, int n)
+static inline void transpose(double * a, double * at, int m, int n)
 {
     int i,j;
 
@@ -135,7 +135,7 @@ static void transpose(double * a, double * at, int m, int n)
 }
 
 /* A <- A + B */
-static void accum(double * a, double * b, int m, int n)
+static inline void accum(double * a, double * b, int m, int n)
 {        
     int i,j;
 
@@ -145,7 +145,7 @@ static void accum(double * a, double * b, int m, int n)
 }
 
 /* C <- A + B */
-static void add(double * a, double * b, double * c, int n)
+static inline void add(double * a, double * b, double * c, int n)
 {
     int j;
 
@@ -155,7 +155,7 @@ static void add(double * a, double * b, double * c, int n)
 
 
 /* C <- A - B */
-static void sub(double * a, double * b, double * c, int n)
+static inline void sub(double * a, double * b, double * c, int n)
 {
     int j;
 
@@ -164,7 +164,7 @@ static void sub(double * a, double * b, double * c, int n)
 }
 
 /* -A <- A */
-static void mat_negate(double * a, int m, int n)
+static inline void mat_negate(double * a, int m, int n)
 {        
     int i, j;
 
@@ -174,11 +174,21 @@ static void mat_negate(double * a, int m, int n)
 }
 
 /* A + I <- A */
-static void mat_addeye(double * a, int n)
+static inline void mat_addeye(double * a, int n)
 {
     int i;
     for (i=0; i<n; ++i)
         a[i*n+i] += 1;
+}
+
+/* bA <- A */
+static inline void matmul_scalar(double * a, int m, int n, double b)
+{        
+    int i, j;
+
+    for(i=0; i<m; ++i)
+        for(j=0; j<n; ++j)
+            a[i*n+j] = b * a[i*n+j];
 }
 
 #endif /* MATRIX_H_ */

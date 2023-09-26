@@ -12,12 +12,19 @@
 #include <stdio.h>
 #include "matrix.hpp"
 #include "quaternions.hpp"
+#include <iostream>
 
-#define N_STATES 19
 #define N_OBS_00 6
 #define N_OBS_01 8
 #define N_OBS_10 7
 #define N_OBS_11 9
+#define N_P 3
+#define N_V 3
+#define N_Q 4
+#define N_W 3
+#define N_BA 3
+#define N_BW 3
+#define N_STATES 19 //N_P+N_V+N_Q+N_W+N_BA+N_BW -> La cantidad de estados total es la suma de sus componentes
 
 typedef struct mediciones{
   double dt;
