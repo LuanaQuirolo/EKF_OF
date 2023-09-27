@@ -44,14 +44,48 @@ int main(){
     std::cout << (filtro.g).q4 << std::endl;
     std::cout << (int)(filtro.Npix) << std::endl;   */
     ofs_ekf_t filtro;
+    float roll = 0.0, pitch = 0.0, yaw = 0.0;
     ofs_ekf_init(&filtro);
     filtro.states[3] = 1;
     filtro.states[4] = 0.5;
     filtro.states[5] = 3;
-    mediciones_t meas;
-    prediction_step(&filtro, meas, 1);
-    for (int i = 0; i < 3; i++){
-        std::cout << filtro.states[i] << std::endl;
+    filtro.states[N_P + N_V + N_Q + N_W + N_BA] = 0.1;
+    filtro.states[N_P + N_V + N_Q + N_W + N_BA + 1] = 0.1;
+    mediciones_t meas = {1, 0, 0, 9.81, 0.1, 0.1, 0.1, 0, 0, 0};
+    prediction_step(&filtro, meas);
+    std::cout << "Posicion" << std::endl;
+    for (int i = 0; i < N_P; i++){
+        std::cout << filtro.states[i] << " ";
     }; 
+    std::cout << std::endl;
+    std::cout << "Velocidad" << std::endl;
+    for (int i = 0; i < N_V; i++){
+        std::cout << filtro.states[N_P + i] << " ";
+    }; 
+    std::cout << std::endl;
+    std::cout << "Quaterniones" << std::endl;
+    for (int i = 0; i < N_Q; i++){
+        std::cout << filtro.states[N_P + N_V + i] << " ";
+    }; 
+    std::cout << std::endl;
+    std::cout << "Angulos Euler" << std::endl;
+    quaternion_t aux = {filtro.states[N_P + N_V], filtro.states[N_P + N_V +1], filtro.states[N_P + N_V+2], filtro.states[N_P + N_V+3]};
+    eulerAngles(aux, &roll, &pitch, &yaw);
+    std::cout << roll << " " << pitch << " " << yaw << std::endl;
+    std::cout << "Velocidad angular" << std::endl;
+    for (int i = 0; i < N_W; i++){
+        std::cout << filtro.states[N_P + N_V + N_Q + i] << " ";
+    }; 
+    std::cout << std::endl;
+    std::cout << "Sesgo aceleracion" << std::endl;
+    for (int i = 0; i < N_BA; i++){
+        std::cout << filtro.states[N_P + N_V + N_Q + N_W + i] << " ";
+    }; 
+    std::cout << std::endl;
+    std::cout << "Sesgo vel angular" << std::endl;
+    for (int i = 0; i < N_BW; i++){
+        std::cout << filtro.states[N_P + N_V + N_Q + N_W + N_BA + i] << " ";
+    }; 
+    std::cout << std::endl;
     return 0;
 }

@@ -191,4 +191,14 @@ static inline void matmul_scalar(double * a, int m, int n, double b)
             a[i*n+j] = b * a[i*n+j];
 }
 
+/* C <- bA */
+static inline void matmul_scalar2(double * a, double * c, int m, int n, double b)
+{        
+    int i, j;
+
+    for(i=0; i<m; ++i)
+        for(j=0; j<n; ++j)
+            c[i*n+j] = b * a[i*n+j];
+}
+
 #endif /* MATRIX_H_ */

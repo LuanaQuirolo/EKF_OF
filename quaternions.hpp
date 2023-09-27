@@ -11,10 +11,10 @@
 #include <math.h>
 
 typedef struct quaternion{
-    float q1;
-    float q2;
-    float q3;
-    float q4;
+    double q1;
+    double q2;
+    double q3;
+    double q4;
 } quaternion_t;
 
 
@@ -80,7 +80,7 @@ static inline void quat_Normalization(struct quaternion * q){
 }
 
 // Extends a vector 3D to a quaternion
-static inline quaternion_t quat_extend(double* vector){
+static inline quaternion_t vec2quat(double* vector){
 
     quaternion_t extended_vector;
     extended_vector.q1 = 0;
@@ -89,6 +89,14 @@ static inline quaternion_t quat_extend(double* vector){
     extended_vector.q4 = vector[2];
     
     return extended_vector;
+};
+
+// Returns vector from quaternion
+static inline void quat2vec(quaternion_t q, double* vector){
+
+    vector[0] = q.q2;
+    vector[1] = q.q3;
+    vector[2] = q.q4;
 };
 
 /*
