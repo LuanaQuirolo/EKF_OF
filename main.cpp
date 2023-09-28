@@ -42,7 +42,13 @@ int main(){
     }; 
     std::cout << (filtro.g).q1 << std::endl;
     std::cout << (filtro.g).q4 << std::endl;
-    std::cout << (int)(filtro.Npix) << std::endl;   */
+    std::cout << (int)(filtro.Npix) << std::endl;
+    for (int i = 0; i < N_STATES; i++){
+        for (int j = 0; j < N_STATES; j++){
+            std::cout << ((*filtro).cov[i][j]) << " ";
+        };
+        std::cout << std::endl;
+    };     */
     ofs_ekf_t filtro;
     float roll = 0.0, pitch = 0.0, yaw = 0.0;
     ofs_ekf_init(&filtro);

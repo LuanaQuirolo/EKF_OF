@@ -16,6 +16,20 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     mat_addeye(*(*filtro).cov, N_STATES);
     zeros(*(*filtro).F, N_STATES, N_STATES);
     zeros(*(*filtro).W, N_STATES, N_NOISE);
+    zeros(*(*filtro).Q, N_NOISE, N_NOISE);
+    (*filtro).Q[0][0] = 0.1; //uax
+    (*filtro).Q[1][1] = 0.1; //uay
+    (*filtro).Q[2][2] = 0.1; //uaz
+    (*filtro).Q[3][3] = 0.1; //uwx
+    (*filtro).Q[4][4] = 0.1; //uwy
+    (*filtro).Q[5][5] = 0.1; //uwz
+    (*filtro).Q[6][6] = 0.01; //ubax
+    (*filtro).Q[7][7] = 0.01; //ubay
+    (*filtro).Q[8][8] = 0.01; //ubaz
+    (*filtro).Q[9][9] = 0.01; //ubwx
+    (*filtro).Q[10][10] = 0.01; //ubwy
+    (*filtro).Q[11][11] = 0.01; //ubwz
+    (*filtro).Q[12][12] = 0.1; //ubsz
     (*filtro).Npix = 35; // Cantidad de píxeles
     (*filtro).FOV_OF = 4.2 * M_PI / 180; // FOV del sensor de OF
     (*filtro).f = (*filtro).Npix / (2 * tan((*filtro).FOV_OF / 2));  // Factor de conversión
@@ -23,6 +37,7 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     
 void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     
+    /* Auxiliares */
     int puntero = 0;
     double p[] = {(*filtro).states[puntero], (*filtro).states[puntero+1], (*filtro).states[puntero+2]};
     puntero += N_P;
@@ -30,7 +45,8 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     puntero += N_V;
     quaternion_t q = {(*filtro).states[puntero+0], (*filtro).states[puntero+1], (*filtro).states[puntero+2], (*filtro).states[puntero+3]};
     puntero += N_Q;
-    quaternion_t qw = {0, (*filtro).states[puntero+0], (*filtro).states[puntero+1], (*filtro).states[puntero+2]};
+    double w[] = {(*filtro).states[puntero+0], (*filtro).states[puntero+1], (*filtro).states[puntero+2]};
+    quaternion_t qw = vec2quat(w);
     puntero += N_W;
     double ba[] = {(*filtro).states[puntero+0], (*filtro).states[puntero+1], (*filtro).states[puntero+2]};
     puntero += N_BA;
@@ -42,61 +58,14 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     quaternion_t aux;
     double aux2[N_V];
     double aux3[N_A];
-    
-    // Posicion
-    matmul_scalar2(v, aux2, N_V, 1, u.dt); //Vk = dt * Vk
-    add(p, aux2, (*filtro).states, N_P); // Pk+1 = Pk + dt * Vk
-    // Velocidad
-    quat_sub(&qa_meas, qa_meas, qba); // qa_meas - qba
-    aux = quat_mult(qa_meas, quat_conjugate(q)); // (qa_meas - qba) * -q
-    aux = quat_mult(q, qa_meas); // q * (qa_meas - qba) * -q
-    quat_sub(&aux, aux, (*filtro).g); // q * (qa_meas - qba) * -q - g
-    quat2vec(aux, aux3);
-    matmul_scalar(aux3, N_A, 1, u.dt); // dt ((a_meas - ba) - g)
-    add(v, aux3, (*filtro).states + N_P, N_V); // Vk+1 = Vk + dt * (a - ba - g)
-    // Quaternion
-    aux = quat_mult(q, qw); // qk * qw
-    quat_scalar(&aux, u.dt / 2); // (dt / 2) qk * qw
-    quat_add(&aux, aux, q); // qk + (dt / 2) qk * qw
-    (*filtro).states[N_P + N_V] = aux.q1;
-    (*filtro).states[N_P + N_V + 1] = aux.q2;
-    (*filtro).states[N_P + N_V + 2] = aux.q3;
-    (*filtro).states[N_P + N_V + 3] = aux.q4;
-    // Velocidad angular
-    quat_sub(&qw_meas, qw_meas, qbw); // qw_meas - qbw
-    aux = quat_mult(qw_meas, quat_conjugate(q)); // (qw_meas - qbw) * -q
-    aux = quat_mult(q, qw_meas); // q * (qw_meas - qbw) * -q
-    quat2vec(aux, aux3);
-    (*filtro).states[N_P + N_V + N_Q] = aux3[0];
-    (*filtro).states[N_P + N_V + N_Q + 1] = aux3[1];
-    (*filtro).states[N_P + N_V + N_Q + 2] = aux3[2];
-    //ba y bw no cambian
+    double aux4[N_STATES][N_STATES];
+    double aux5[N_STATES][N_STATES];
+    double aux6[N_STATES][N_STATES];
+    double aux7[N_STATES][N_STATES];
+    double Wt[N_NOISE][N_STATES];
+    double Ft[N_STATES][N_STATES];
 
-    puntero = 0;
-    p[0] = (*filtro).states[puntero];
-    p[1] = (*filtro).states[puntero+1];
-    p[2] = (*filtro).states[puntero+2];
-    puntero += N_P;
-    v[0] = (*filtro).states[puntero+0];
-    v[1] = (*filtro).states[puntero+1]; 
-    v[2] = (*filtro).states[puntero+2];
-    puntero += N_V;
-    q.q1 = (*filtro).states[puntero+0]; 
-    q.q2 = (*filtro).states[puntero+1]; 
-    q.q3 = (*filtro).states[puntero+2]; 
-    q.q4 = (*filtro).states[puntero+3];
-    puntero += N_Q;
-    double w[] = {(*filtro).states[puntero+0], (*filtro).states[puntero+1], (*filtro).states[puntero+2]};
-    puntero += N_W;
-    ba[0] = (*filtro).states[puntero+0];
-    ba[1] = (*filtro).states[puntero+1]; 
-    ba[2] = (*filtro).states[puntero+2];
-    puntero += N_BA;
-    bw[0] = (*filtro).states[puntero+0];
-    bw[1] = (*filtro).states[puntero+1]; 
-    bw[2] = (*filtro).states[puntero+2];
-
-    //FK
+    /* Fk */
     mat_addeye(*(*filtro).F, N_STATES);
     //d(posicion) / d(velocidad)
     (*filtro).F[0][N_P] = u.dt;
@@ -189,7 +158,7 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     (*filtro).F[N_P+N_V+N_Q+1][N_P+N_V+N_Q+N_W+2] = -2*q.q1*q.q2 - 2*q.q3*q.q4;
     (*filtro).F[N_P+N_V+N_Q+2][N_P+N_V+N_Q+N_W+2] = -pow(q.q1, 2) + pow(q.q2, 2) + pow(q.q3, 2) - pow(q.q4, 2);
 
-    //Wk
+    /* Wk */
     // d(velocidad) / d(uax)
     (*filtro).W[N_P][0] = (-pow(q.q1, 2) - pow(q.q2, 2) + pow(q.q3, 2) + pow(q.q4, 2)) * u.dt;
     (*filtro).W[N_P+1][0] = (2*q.q1*q.q4 - 2*q.q2*q.q3) * u.dt;
@@ -223,15 +192,44 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     (*filtro).W[N_P+N_V+N_Q+N_W+N_BW+1][10] = u.dt;
     (*filtro).W[N_P+N_V+N_Q+N_W+N_BW+2][11] = u.dt;
 
-    for (int i = 0; i < N_STATES; i++){
-        for (int j = 0; j < N_NOISE; j++){
-            std::cout << (((*filtro).W)[i][j]) << " ";
-        };
-        std::cout << std::endl;
-    };  
-    //WK
+    /* Covarianza a priori */
+    transpose(*(*filtro).W, *Wt, N_STATES, N_NOISE);
+    mulmat(*(*filtro).Q, *Wt, *aux4, N_NOISE, N_NOISE, N_STATES);
+    mulmat(*(*filtro).W, *aux4, *aux6, N_STATES, N_STATES, N_NOISE);
+    transpose(*(*filtro).F, *Ft, N_STATES, N_STATES);
+    mulmat(*(*filtro).cov, *Ft, *aux5, N_STATES, N_STATES, N_STATES);
+    mulmat(*(*filtro).F, *aux5, *aux7, N_STATES, N_STATES, N_STATES);
+    add(*aux6, *aux7, *(*filtro).cov, N_STATES, N_STATES); 
 
-    //Covarianza a priori
+    /* Paso de prediccion */
+    // Posicion
+    matmul_scalar2(v, aux2, N_V, 1, u.dt); //Vk = dt * Vk
+    add(p, aux2, (*filtro).states, N_P, 1); // Pk+1 = Pk + dt * Vk
+    // Velocidad
+    quat_sub(&qa_meas, qa_meas, qba); // qa_meas - qba
+    aux = quat_mult(qa_meas, quat_conjugate(q)); // (qa_meas - qba) * -q
+    aux = quat_mult(q, qa_meas); // q * (qa_meas - qba) * -q
+    quat_sub(&aux, aux, (*filtro).g); // q * (qa_meas - qba) * -q - g
+    quat2vec(aux, aux3);
+    matmul_scalar(aux3, N_A, 1, u.dt); // dt ((a_meas - ba) - g)
+    add(v, aux3, (*filtro).states + N_P, N_V, 1); // Vk+1 = Vk + dt * (a - ba - g)
+    // Quaternion
+    aux = quat_mult(q, qw); // qk * qw
+    quat_scalar(&aux, u.dt / 2); // (dt / 2) qk * qw
+    quat_add(&aux, aux, q); // qk + (dt / 2) qk * qw
+    (*filtro).states[N_P + N_V] = aux.q1;
+    (*filtro).states[N_P + N_V + 1] = aux.q2;
+    (*filtro).states[N_P + N_V + 2] = aux.q3;
+    (*filtro).states[N_P + N_V + 3] = aux.q4;
+    // Velocidad angular
+    quat_sub(&qw_meas, qw_meas, qbw); // qw_meas - qbw
+    aux = quat_mult(qw_meas, quat_conjugate(q)); // (qw_meas - qbw) * -q
+    aux = quat_mult(q, qw_meas); // q * (qw_meas - qbw) * -q
+    quat2vec(aux, aux3);
+    (*filtro).states[N_P + N_V + N_Q] = aux3[0];
+    (*filtro).states[N_P + N_V + N_Q + 1] = aux3[1];
+    (*filtro).states[N_P + N_V + N_Q + 2] = aux3[2];
+    //ba y bw no cambian
 };
 
 void correction_step(ofs_ekf_t* filtro, mediciones_t z, double dt){

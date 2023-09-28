@@ -57,6 +57,7 @@ typedef struct ofs_ekf {
     double cov[N_STATES][N_STATES]; // Matriz de covarianza de estados
     double F[N_STATES][N_STATES]; // Derivada de vector de estados respecto de si mismo
     double W[N_STATES][N_NOISE]; // Derivada de vector de estados respecto de ruidos
+    double Q[N_NOISE][N_NOISE]; // Matriz ruidos
     uint8_t Npix; // Cantidad de píxeles
     float FOV_OF; // FOV del sensor de OF
     float f;  // Factor de conversión

@@ -145,12 +145,13 @@ static inline void accum(double * a, double * b, int m, int n)
 }
 
 /* C <- A + B */
-static inline void add(double * a, double * b, double * c, int n)
+static inline void add(double * a, double * b, double * c, int m, int n)
 {
-    int j;
+    int i,j;
 
-    for(j=0; j<n; ++j)
-        c[j] = a[j] + b[j];
+    for(i=0; i<m; ++i)
+        for(j=0; j<n; ++j)
+            c[i*n+j] = b[i*n+j] + a[i*n+j];
 }
 
 
