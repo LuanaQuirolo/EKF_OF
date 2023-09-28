@@ -15,6 +15,7 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     zeros(*(*filtro).cov, N_STATES, N_STATES); // Matriz de covarianza de estados
     mat_addeye(*(*filtro).cov, N_STATES);
     zeros(*(*filtro).F, N_STATES, N_STATES);
+    zeros(*(*filtro).W, N_STATES, N_NOISE);
     (*filtro).Npix = 35; // Cantidad de píxeles
     (*filtro).FOV_OF = 4.2 * M_PI / 180; // FOV del sensor de OF
     (*filtro).f = (*filtro).Npix / (2 * tan((*filtro).FOV_OF / 2));  // Factor de conversión
@@ -159,9 +160,72 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     (*filtro).F[N_P+N_V+1][N_P+N_V+N_Q+2] = q.q3 * u.dt / 2;
     (*filtro).F[N_P+N_V+2][N_P+N_V+N_Q+2] = -q.q2 * u.dt / 2;
     (*filtro).F[N_P+N_V+3][N_P+N_V+N_Q+2] = q.q1 * u.dt / 2;
+    //d(w) / d(q1)
+    (*filtro).F[N_P+N_V+N_Q][N_P+N_V] = 2*q.q1*(u.wx-bw[0])+2*q.q4*(u.wy-bw[1])-2*q.q3*(u.wz-bw[2]);
+    (*filtro).F[N_P+N_V+N_Q+1][N_P+N_V] = -2*q.q4*(u.wx-bw[0])+2*q.q1*(u.wy-bw[1])+2*q.q2*(u.wz-bw[2]);
+    (*filtro).F[N_P+N_V+N_Q+2][N_P+N_V] = 2*q.q3*(u.wx-bw[0])-2*q.q2*(u.wy-bw[1])+2*q.q1*(u.wz-bw[2]);
+    //d(w) / d(q2)
+    (*filtro).F[N_P+N_V+N_Q][N_P+N_V+1] = 2*q.q2*(u.wx-bw[0])+2*q.q3*(u.wy-bw[1])+2*q.q4*(u.wz-bw[2]);
+    (*filtro).F[N_P+N_V+N_Q+1][N_P+N_V+1] = 2*q.q3*(u.wx-bw[0])-2*q.q2*(u.wy-bw[1])+2*q.q1*(u.wz-bw[2]);
+    (*filtro).F[N_P+N_V+N_Q+2][N_P+N_V+1] = 2*q.q4*(u.wx-bw[0])-2*q.q1*(u.wy-bw[1])-2*q.q2*(u.wz-bw[2]);
+    //d(w) / d(q3)
+    (*filtro).F[N_P+N_V+N_Q][N_P+N_V+2] = -2*q.q3*(u.wx-bw[0])+2*q.q2*(u.wy-bw[1])-2*q.q1*(u.wz-bw[2]);
+    (*filtro).F[N_P+N_V+N_Q+1][N_P+N_V+2] = 2*q.q2*(u.wx-bw[0])+2*q.q3*(u.wy-bw[1])+2*q.q4*(u.wz-bw[2]);
+    (*filtro).F[N_P+N_V+N_Q+2][N_P+N_V+2] = 2*q.q1*(u.wx-bw[0])+2*q.q4*(u.wy-bw[1])-2*q.q3*(u.wz-bw[2]);
+    //d(w) / d(q4)
+    (*filtro).F[N_P+N_V+N_Q][N_P+N_V+3] = -2*q.q4*(u.wx-bw[0])+2*q.q1*(u.wy-bw[1])+2*q.q2*(u.wz-bw[2]);
+    (*filtro).F[N_P+N_V+N_Q+1][N_P+N_V+3] = -2*q.q1*(u.wx-bw[0])-2*q.q4*(u.wy-bw[1])+2*q.q3*(u.wz-bw[2]);
+    (*filtro).F[N_P+N_V+N_Q+2][N_P+N_V+3] = 2*q.q2*(u.wx-bw[0])+2*q.q3*(u.wy-bw[1])+2*q.q4*(u.wz-bw[2]);
+    //d(w) / d(bwx)
+    (*filtro).F[N_P+N_V+N_Q][N_P+N_V+N_Q+N_W] = -pow(q.q1, 2) - pow(q.q2, 2) + pow(q.q3, 2) + pow(q.q4, 2);
+    (*filtro).F[N_P+N_V+N_Q+1][N_P+N_V+N_Q+N_W] = 2*q.q1*q.q4 - 2*q.q2*q.q3;
+    (*filtro).F[N_P+N_V+N_Q+2][N_P+N_V+N_Q+N_W] = -2*q.q1*q.q3 - 2*q.q2*q.q4;
+    //d(w) / d(bwy)
+    (*filtro).F[N_P+N_V+N_Q][N_P+N_V+N_Q+N_W+1] = -2*q.q1*q.q4 - 2*q.q2*q.q3;
+    (*filtro).F[N_P+N_V+N_Q+1][N_P+N_V+N_Q+N_W+1] = -pow(q.q1, 2) + pow(q.q2, 2) - pow(q.q3, 2) + pow(q.q4, 2);
+    (*filtro).F[N_P+N_V+N_Q+2][N_P+N_V+N_Q+N_W+1] = 2*q.q1*q.q2 - 2*q.q3*q.q4;
+    //d(w) / d(bwz)
+    (*filtro).F[N_P+N_V+N_Q][N_P+N_V+N_Q+N_W+2] = 2*q.q1*q.q3 - 2*q.q2*q.q4;
+    (*filtro).F[N_P+N_V+N_Q+1][N_P+N_V+N_Q+N_W+2] = -2*q.q1*q.q2 - 2*q.q3*q.q4;
+    (*filtro).F[N_P+N_V+N_Q+2][N_P+N_V+N_Q+N_W+2] = -pow(q.q1, 2) + pow(q.q2, 2) + pow(q.q3, 2) - pow(q.q4, 2);
+
+    //Wk
+    // d(velocidad) / d(uax)
+    (*filtro).W[N_P][0] = (-pow(q.q1, 2) - pow(q.q2, 2) + pow(q.q3, 2) + pow(q.q4, 2)) * u.dt;
+    (*filtro).W[N_P+1][0] = (2*q.q1*q.q4 - 2*q.q2*q.q3) * u.dt;
+    (*filtro).W[N_P+2][0] = (-2*q.q1*q.q3 - 2*q.q2*q.q4) * u.dt;
+    // d(velocidad) / d(uay)
+    (*filtro).W[N_P][1] = (-2*q.q1*q.q4 - 2*q.q2*q.q3) * u.dt;
+    (*filtro).W[N_P+1][1] = (-pow(q.q1, 2) + pow(q.q2, 2) - pow(q.q3, 2) + pow(q.q4, 2)) * u.dt;
+    (*filtro).W[N_P+2][1] = (2*q.q1*q.q2 - 2*q.q3*q.q4) * u.dt;
+    // d(velocidad) / d(uaz)
+    (*filtro).W[N_P][2] = (2*q.q1*q.q3 - 2*q.q2*q.q4) * u.dt;
+    (*filtro).W[N_P+1][2] = (-2*q.q1*q.q2 - 2*q.q3*q.q4) * u.dt;
+    (*filtro).W[N_P+2][2] = (-pow(q.q1, 2) + pow(q.q2, 2) + pow(q.q3, 2) - pow(q.q4, 2)) * u.dt;
+    // d(w) / d(uwx)
+    (*filtro).W[N_P+N_V+N_Q][3] = (-pow(q.q1, 2) - pow(q.q2, 2) + pow(q.q3, 2) + pow(q.q4, 2)) * u.dt;
+    (*filtro).W[N_P+N_V+N_Q+1][3] = (2*q.q1*q.q4 - 2*q.q2*q.q3) * u.dt;
+    (*filtro).W[N_P+N_V+N_Q+2][3] = (-2*q.q1*q.q3 - 2*q.q2*q.q4) * u.dt;
+    // d(w) / d(uwy)
+    (*filtro).W[N_P+N_V+N_Q][4] = (-2*q.q1*q.q4 - 2*q.q2*q.q3) * u.dt;
+    (*filtro).W[N_P+N_V+N_Q+1][4] = (-pow(q.q1, 2) + pow(q.q2, 2) - pow(q.q3, 2) + pow(q.q4, 2)) * u.dt;
+    (*filtro).W[N_P+N_V+N_Q+2][4] = (2*q.q1*q.q2 - 2*q.q3*q.q4) * u.dt;
+    // d(w) / d(uwz)
+    (*filtro).W[N_P+N_V+N_Q][5] = (2*q.q1*q.q3 - 2*q.q2*q.q4) * u.dt;
+    (*filtro).W[N_P+N_V+N_Q+1][5] = (-2*q.q1*q.q2 - 2*q.q3*q.q4) * u.dt;
+    (*filtro).W[N_P+N_V+N_Q+2][5] = (-pow(q.q1, 2) + pow(q.q2, 2) + pow(q.q3, 2) - pow(q.q4, 2)) * u.dt;
+    // d(bw) / d(ubw)
+    (*filtro).W[N_P+N_V+N_Q+N_W][6] = u.dt;
+    (*filtro).W[N_P+N_V+N_Q+N_W+1][7] = u.dt;
+    (*filtro).W[N_P+N_V+N_Q+N_W+2][8] = u.dt;
+    // d(ba) / d(uba)
+    (*filtro).W[N_P+N_V+N_Q+N_W+N_BW][9] = u.dt;
+    (*filtro).W[N_P+N_V+N_Q+N_W+N_BW+1][10] = u.dt;
+    (*filtro).W[N_P+N_V+N_Q+N_W+N_BW+2][11] = u.dt;
+
     for (int i = 0; i < N_STATES; i++){
-        for (int j = 0; j < N_STATES; j++){
-            std::cout << (((*filtro).F)[i][j]) << " ";
+        for (int j = 0; j < N_NOISE; j++){
+            std::cout << (((*filtro).W)[i][j]) << " ";
         };
         std::cout << std::endl;
     };  
