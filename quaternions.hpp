@@ -82,12 +82,7 @@ static inline void quat_Normalization(struct quaternion * q){
 // Extends a vector 3D to a quaternion
 static inline quaternion_t vec2quat(double* vector){
 
-    quaternion_t extended_vector;
-    extended_vector.q1 = 0;
-    extended_vector.q2 = vector[0];
-    extended_vector.q3 = vector[1];
-    extended_vector.q4 = vector[2];
-    
+    quaternion_t extended_vector = {0, vector[0], vector[1], vector[2]};
     return extended_vector;
 };
 

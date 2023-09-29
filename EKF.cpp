@@ -32,7 +32,7 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     (*filtro).Q[12][12] = 0.1; //ubsz
     (*filtro).Npix = 35; // Cantidad de píxeles
     (*filtro).FOV_OF = 4.2 * M_PI / 180; // FOV del sensor de OF
-    (*filtro).f = (*filtro).Npix / (2 * tan((*filtro).FOV_OF / 2));  // Factor de conversión
+    (*filtro).f = (*filtro).Npix / (2 * atan2f((*filtro).FOV_OF, 2));  // Factor de conversión
 };
     
 void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
@@ -207,31 +207,32 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     add(p, aux2, (*filtro).states, N_P, 1); // Pk+1 = Pk + dt * Vk
     // Velocidad
     quat_sub(&qa_meas, qa_meas, qba); // qa_meas - qba
-    aux = quat_mult(qa_meas, quat_conjugate(q)); // (qa_meas - qba) * -q
-    aux = quat_mult(q, qa_meas); // q * (qa_meas - qba) * -q
+    // El q es de mundo a cuerpo, y queremos de cuerpo a mundo asi que se conjuga
+    aux = quat_mult(qa_meas, q); // (qa_meas - qba) * -q
+    aux = quat_mult(quat_conjugate(q), aux); // q * (qa_meas - qba) * -q
     quat_sub(&aux, aux, (*filtro).g); // q * (qa_meas - qba) * -q - g
     quat2vec(aux, aux3);
     matmul_scalar(aux3, N_A, 1, u.dt); // dt ((a_meas - ba) - g)
     add(v, aux3, (*filtro).states + N_P, N_V, 1); // Vk+1 = Vk + dt * (a - ba - g)
     // Quaternion
-    aux = quat_mult(q, qw); // qk * qw
+    aux = quat_mult(qw, q); // qk * qw
     quat_scalar(&aux, u.dt / 2); // (dt / 2) qk * qw
     quat_add(&aux, aux, q); // qk + (dt / 2) qk * qw
+    quat_Normalization(&aux);
     (*filtro).states[N_P + N_V] = aux.q1;
     (*filtro).states[N_P + N_V + 1] = aux.q2;
     (*filtro).states[N_P + N_V + 2] = aux.q3;
     (*filtro).states[N_P + N_V + 3] = aux.q4;
     // Velocidad angular
     quat_sub(&qw_meas, qw_meas, qbw); // qw_meas - qbw
-    aux = quat_mult(qw_meas, quat_conjugate(q)); // (qw_meas - qbw) * -q
-    aux = quat_mult(q, qw_meas); // q * (qw_meas - qbw) * -q
-    quat2vec(aux, aux3);
-    (*filtro).states[N_P + N_V + N_Q] = aux3[0];
-    (*filtro).states[N_P + N_V + N_Q + 1] = aux3[1];
-    (*filtro).states[N_P + N_V + N_Q + 2] = aux3[2];
+    aux = quat_mult(qw_meas, q); // (qw_meas - qbw) * -q
+    aux = quat_mult(quat_conjugate(q), aux); // q * (qw_meas - qbw) * -q
+    quat2vec(aux, (*filtro).states + N_P + N_V + N_Q);
     //ba y bw no cambian
 };
 
 void correction_step(ofs_ekf_t* filtro, mediciones_t z, double dt){
+
+
 
 };

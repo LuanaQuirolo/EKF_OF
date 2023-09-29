@@ -5,15 +5,9 @@
 #include <iostream>
 using namespace std;
 
+void print_states(ofs_ekf_t filtro); 
+void print_cov(ofs_ekf_t *filtro);
 int main(){
-    /*
-    float roll = 0.0, pitch = 0.0, yaw = 0.0;
-    struct quaternion hola = {1, 0, 0, 0};
-    struct quaternion chau = {1, 0, 0, 0};
-    eulerAngles(hola, &roll, &pitch, &yaw);
-    std::cout << quat_mult(hola, chau).q1 << quat_mult(hola, chau).q2<< quat_mult(hola, chau).q3<< quat_mult(hola, chau).q4 << std::endl;
-    std::cout << hola.q1 << hola.q2<< hola.q3<< hola.q4 << std::endl;
-    */
    /*
     int size = 3;
     double P[size][size];
@@ -50,16 +44,26 @@ int main(){
         std::cout << std::endl;
     };     */
     ofs_ekf_t filtro;
-    float roll = 0.0, pitch = 0.0, yaw = 0.0;
     ofs_ekf_init(&filtro);
-    filtro.states[3] = 1;
-    filtro.states[4] = 0.5;
-    filtro.states[5] = 3;
-    filtro.states[N_P + N_V + N_Q + N_W + N_BA] = 0.1;
-    filtro.states[N_P + N_V + N_Q + N_W + N_BA + 1] = 0.1;
-    mediciones_t meas = {1, 0, 0, 9.81, 0.1, 0.1, 0.1, 0, 0, 0};
-    prediction_step(&filtro, meas);
-    std::cout << "Posicion" << std::endl;
+    filtro.states[3] = 0;
+    filtro.states[4] = 0;
+    filtro.states[5] = 0;
+    filtro.states[N_P + N_V + N_Q + N_W + N_BA] = 0;
+    filtro.states[N_P + N_V + N_Q + N_W + N_BA + 1] = 0;
+    filtro.states[N_P + N_V + N_Q + N_W + N_BA + 2] = 0;
+    for (int i = 0; i<2; i++){
+        mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
+        prediction_step(&filtro, meas);
+        print_states(filtro);
+        //print_cov(&filtro);
+    }
+    return 0;
+}
+
+
+void print_states(ofs_ekf_t filtro){
+    float roll = 0.0, pitch = 0.0, yaw = 0.0;
+        std::cout << "Posicion" << std::endl;
     for (int i = 0; i < N_P; i++){
         std::cout << filtro.states[i] << " ";
     }; 
@@ -93,5 +97,14 @@ int main(){
         std::cout << filtro.states[N_P + N_V + N_Q + N_W + N_BA + i] << " ";
     }; 
     std::cout << std::endl;
-    return 0;
+}
+
+void print_cov(ofs_ekf_t *filtro){
+    std::cout << "Covarianza" << std::endl;
+    for (int i = 0; i < N_STATES; i++){
+        for (int j = 0; j < N_STATES; j++){
+            std::cout << ((*filtro).cov[i][j]) << " ";
+        };
+        std::cout << std::endl;
+    };
 }
