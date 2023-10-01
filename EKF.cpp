@@ -215,9 +215,9 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     matmul_scalar(aux3, N_A, 1, u.dt); // dt ((a_meas - ba) - g)
     add(v, aux3, (*filtro).states + N_P, N_V, 1); // Vk+1 = Vk + dt * (a - ba - g)
     // Quaternion
-    aux = quat_mult(qw, q); // qk * qw
-    quat_scalar(&aux, u.dt / 2); // (dt / 2) qk * qw
-    quat_add(&aux, aux, q); // qk + (dt / 2) qk * qw
+    aux = quat_mult(qw, q); // qw * qk
+    quat_scalar(&aux, u.dt / 2); // (dt / 2) qw * qk
+    quat_add(&aux, aux, q); // qk + (dt / 2) qw * qk
     quat_Normalization(&aux);
     (*filtro).states[N_P + N_V] = aux.q1;
     (*filtro).states[N_P + N_V + 1] = aux.q2;

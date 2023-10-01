@@ -51,8 +51,8 @@ int main(){
     filtro.states[N_P + N_V + N_Q + N_W + N_BA] = 0;
     filtro.states[N_P + N_V + N_Q + N_W + N_BA + 1] = 0;
     filtro.states[N_P + N_V + N_Q + N_W + N_BA + 2] = 0;
+    mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
     for (int i = 0; i<2; i++){
-        mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
         prediction_step(&filtro, meas);
         print_states(filtro);
         //print_cov(&filtro);
@@ -66,7 +66,7 @@ void print_states(ofs_ekf_t filtro){
         std::cout << "Posicion" << std::endl;
     for (int i = 0; i < N_P; i++){
         std::cout << filtro.states[i] << " ";
-    }; 
+    };
     std::cout << std::endl;
     std::cout << "Velocidad" << std::endl;
     for (int i = 0; i < N_V; i++){

@@ -103,9 +103,9 @@ static inline void quat2vec(quaternion_t q, double* vector){
  */
 static inline void eulerAngles(struct quaternion q, float* roll, float* pitch, float* yaw){
     
-    *yaw = atan2f((2*q.q1*q.q2 + 2*q.q3*q.q4), (1 - 2*q.q2*q.q2 - 2*q.q3*q.q3)); 
+    *roll = atan2f((2*q.q1*q.q2 + 2*q.q3*q.q4), (1 - 2*q.q2*q.q2 - 2*q.q3*q.q3)); 
     *pitch = asinf(2*q.q1*q.q3 - 2*q.q2*q.q4);                                  
-    *roll  = atan2f((2*q.q1*q.q4 + 2*q.q2*q.q3), (1 - 2*q.q3*q.q3 - 2*q.q4*q.q4));
+    *yaw  = atan2f((2*q.q1*q.q4 + 2*q.q2*q.q3), (1 - 2*q.q3*q.q3 - 2*q.q4*q.q4));
     
     *yaw *= (180.0f / M_PI);
     *pitch *= (180.0f / M_PI);
