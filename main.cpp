@@ -48,9 +48,6 @@ int main(){
     filtro.states[3] = 0;
     filtro.states[4] = 0;
     filtro.states[5] = 0;
-    filtro.states[N_P + N_V + N_Q + N_W + N_BA] = 0;
-    filtro.states[N_P + N_V + N_Q + N_W + N_BA + 1] = 0;
-    filtro.states[N_P + N_V + N_Q + N_W + N_BA + 2] = 0;
     mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
     for (int i = 0; i<2; i++){
         prediction_step(&filtro, meas);
@@ -82,21 +79,6 @@ void print_states(ofs_ekf_t filtro){
     quaternion_t aux = {filtro.states[N_P + N_V], filtro.states[N_P + N_V +1], filtro.states[N_P + N_V+2], filtro.states[N_P + N_V+3]};
     eulerAngles(aux, &roll, &pitch, &yaw);
     std::cout << roll << " " << pitch << " " << yaw << std::endl;
-    std::cout << "Velocidad angular" << std::endl;
-    for (int i = 0; i < N_W; i++){
-        std::cout << filtro.states[N_P + N_V + N_Q + i] << " ";
-    }; 
-    std::cout << std::endl;
-    std::cout << "Sesgo aceleracion" << std::endl;
-    for (int i = 0; i < N_BA; i++){
-        std::cout << filtro.states[N_P + N_V + N_Q + N_W + i] << " ";
-    }; 
-    std::cout << std::endl;
-    std::cout << "Sesgo vel angular" << std::endl;
-    for (int i = 0; i < N_BW; i++){
-        std::cout << filtro.states[N_P + N_V + N_Q + N_W + N_BA + i] << " ";
-    }; 
-    std::cout << std::endl;
 }
 
 void print_cov(ofs_ekf_t *filtro){

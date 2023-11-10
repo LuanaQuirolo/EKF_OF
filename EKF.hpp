@@ -21,12 +21,8 @@
 #define N_P 3
 #define N_V 3
 #define N_Q 4
-#define N_W 3
-#define N_A 3
-#define N_BA 3
-#define N_BW 3
-#define N_STATES 19 //N_P+N_V+N_Q+N_W+N_BA+N_BW -> La cantidad de estados total es la suma de sus componentes
-#define N_NOISE 13
+#define N_STATES 10 //N_P+N_V+N_Q -> La cantidad de estados total es la suma de sus componentes
+#define N_NOISE 7
 
 typedef struct mediciones{
   double dt;
@@ -53,7 +49,7 @@ typedef struct ofs_ekf {
     uint8_t M01; // Cantidad de observaciones con beta=0, gamma=1
     uint8_t M10; // Cantidad de observaciones con beta=1, gamma=0
     uint8_t M11; // Cantidad de observaciones con beta=1, gamma=1
-    double states[N_STATES]; //p, v, q, w, ba, bw
+    double states[N_STATES]; //p, v, q
     double cov[N_STATES][N_STATES]; // Matriz de covarianza de estados
     double F[N_STATES][N_STATES]; // Derivada de vector de estados respecto de si mismo
     double W[N_STATES][N_NOISE]; // Derivada de vector de estados respecto de ruidos
@@ -61,6 +57,7 @@ typedef struct ofs_ekf {
     uint8_t Npix; // Cantidad de píxeles
     float FOV_OF; // FOV del sensor de OF
     float f;  // Factor de conversión
+    int puntero;
 } ofs_ekf_t; 
 
   void ofs_ekf_init(ofs_ekf_t* filtro);

@@ -10,7 +10,7 @@
 #define MATRIX_H_
 #include <math.h>
 
-/* Cholesky-decomposition matrix-inversion code, adapated from
+/* Cholesky-decomposition matrix-inversion code, adapted from
    http://jean-pierre.moreau.pagesperso-orange.fr/Cplus/choles_cpp.txt */
 
 
