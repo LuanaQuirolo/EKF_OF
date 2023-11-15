@@ -5,21 +5,10 @@
  *                  Padron: 102102
 ****************************************************************/
 
-#ifndef QUATERNIONS_H_
-#define QUATERNIONS_H_
-
-#include <math.h>
-
-typedef struct quaternion{
-    double q1;
-    double q2;
-    double q3;
-    double q4;
-} quaternion_t;
-
+#include "quaternions.h"
 
 // Multiply two quaternions and return a copy of the result, prod = L * R
-static inline quaternion_t quat_mult (struct quaternion L, struct quaternion R){
+quaternion_t quat_mult (struct quaternion L, struct quaternion R){
     
     quaternion_t product;
     product.q1 = (L.q1 * R.q1) - (L.q2 * R.q2) - (L.q3 * R.q3) - (L.q4 * R.q4);
@@ -31,7 +20,7 @@ static inline quaternion_t quat_mult (struct quaternion L, struct quaternion R){
 }
 
 // Multiply a reference of a quaternion by a scalar, q = s*q
-static inline void quat_scalar(struct quaternion * q, float scalar){
+void quat_scalar(struct quaternion * q, float scalar){
     q -> q1 *= scalar;
     q -> q2 *= scalar;
     q -> q3 *= scalar;
@@ -39,7 +28,7 @@ static inline void quat_scalar(struct quaternion * q, float scalar){
 }
 
 // Adds two quaternions together and the sum is the pointer to another quaternion, Sum = L + R
-static inline void quat_add(struct quaternion * Sum, struct quaternion L, struct quaternion R){
+void quat_add(struct quaternion * Sum, struct quaternion L, struct quaternion R){
     Sum -> q1 = L.q1 + R.q1;
     Sum -> q2 = L.q2 + R.q2;
     Sum -> q3 = L.q3 + R.q3;
@@ -47,7 +36,7 @@ static inline void quat_add(struct quaternion * Sum, struct quaternion L, struct
 }
 
 // Subtracts two quaternions together and the sum is the pointer to another quaternion, sum = L - R
-static inline void quat_sub(struct quaternion * Sum, struct quaternion L, struct quaternion R){
+void quat_sub(struct quaternion * Sum, struct quaternion L, struct quaternion R){
     Sum -> q1 = L.q1 - R.q1;
     Sum -> q2 = L.q2 - R.q2;
     Sum -> q3 = L.q3 - R.q3;
@@ -55,7 +44,7 @@ static inline void quat_sub(struct quaternion * Sum, struct quaternion L, struct
 }
 
 // the conjugate of a quaternion is it's imaginary component sign changed  q* = [s, -v] if q = [s, v]
-static inline quaternion_t quat_conjugate(struct quaternion q){
+quaternion_t quat_conjugate(struct quaternion q){
     q.q2 = -q.q2;
     q.q3 = -q.q3;
     q.q4 = -q.q4;
@@ -65,13 +54,13 @@ static inline quaternion_t quat_conjugate(struct quaternion q){
 // norm of a quaternion is the same as a complex number
 // sqrt( q1^2 + q2^2 + q3^2 + q4^2)
 // the norm is also the sqrt(q * conjugate(q)), but thats a lot of operations in the quaternion multiplication
-static inline float quat_Norm (quaternion_t q)
+float quat_Norm (quaternion_t q)
 {
     return sqrt(q.q1*q.q1 + q.q2*q.q2 + q.q3*q.q3 +q.q4*q.q4);
 }
 
 // Normalizes pointer q by calling quat_Norm(q),
-static inline void quat_Normalization(struct quaternion * q){
+void quat_Normalization(struct quaternion * q){
     float norm = quat_Norm(*q);
     q -> q1 /= norm;
     q -> q2 /= norm;
@@ -80,14 +69,14 @@ static inline void quat_Normalization(struct quaternion * q){
 }
 
 // Extends a vector 3D to a quaternion
-static inline quaternion_t vec2quat(double* vector){
+quaternion_t vec2quat(double* vector){
 
     quaternion_t extended_vector = {0, vector[0], vector[1], vector[2]};
     return extended_vector;
 };
 
 // Returns vector from quaternion
-static inline void quat2vec(quaternion_t q, double* vector){
+void quat2vec(quaternion_t q, double* vector){
 
     vector[0] = q.q2;
     vector[1] = q.q3;
@@ -101,7 +90,7 @@ static inline void quat2vec(quaternion_t q, double* vector){
  Pitch is about the y axis, represented as theta
  Yaw is about the z axis, represented as psi 
  */
-static inline void eulerAngles(struct quaternion q, float* roll, float* pitch, float* yaw){
+void eulerAngles(struct quaternion q, float* roll, float* pitch, float* yaw){
     
     *roll = atan2f((2*q.q1*q.q2 + 2*q.q3*q.q4), (1 - 2*q.q2*q.q2 - 2*q.q3*q.q3)); 
     *pitch = asinf(2*q.q1*q.q3 - 2*q.q2*q.q4);                                  
@@ -112,5 +101,3 @@ static inline void eulerAngles(struct quaternion q, float* roll, float* pitch, f
     *roll *= (180.0f / M_PI);
 
 }
-
-#endif /* QUATERNIONS_H_ */

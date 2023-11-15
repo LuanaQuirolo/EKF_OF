@@ -7,7 +7,7 @@ default: exec
 all: build valgrind exec
 
 build: 
-	g++ -o $(NAME) *.cpp 
+	gcc *.c -o $(NAME)
 
 valgrind: build
 	valgrind $(VALGRIND_FLAGS) ./$(NAME) 

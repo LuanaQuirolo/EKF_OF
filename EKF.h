@@ -10,9 +10,9 @@
 
 #include <math.h>
 #include <stdio.h>
-#include "matrix.hpp"
-#include "quaternions.hpp"
-#include <iostream>
+#include "matrix.h"
+#include "quaternions.h"
+#include <stdint.h>
 
 #define N_OBS_00 6
 #define N_OBS_01 8
@@ -42,9 +42,9 @@ typedef struct mediciones{
  ***************************************************************/
 typedef struct ofs_ekf {
     uint8_t N; // Cantidad de estados
-    bool beta; // Indica si hay una lectura nueva del OFS
-    bool gamma; // Indica si hay una lectura nueva del sensor de distancia
-    quaternion_t g; 
+    int beta; // Indica si hay una lectura nueva del OFS
+    int gamma; // Indica si hay una lectura nueva del sensor de distancia
+    quaternion_t qg; 
     uint8_t M00; // Cantidad de observaciones con beta=gamma=0
     uint8_t M01; // Cantidad de observaciones con beta=0, gamma=1
     uint8_t M10; // Cantidad de observaciones con beta=1, gamma=0
@@ -72,6 +72,6 @@ typedef struct ofs_ekf {
 * las mediciones disponibles.
 * Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.
 * Pos: El estado se encuentra corregido en base a las mediciones. */
-  void correction_step(ofs_ekf_t* filtro, mediciones_t z);
+  void correction_step(ofs_ekf_t* filtro, mediciones_t z, double dt);
 
 #endif /* EKF_H_ */

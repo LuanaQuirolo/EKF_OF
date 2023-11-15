@@ -1,21 +1,21 @@
-#include "EKF.hpp"
+#include "EKF.h"
 
 void ofs_ekf_init(ofs_ekf_t* filtro){
     (*filtro).N =  N_STATES; // Cantidad de estados
-    (*filtro).beta = false; // Indica si hay una lectura nueva del OFS
-    (*filtro).gamma = false; // Indica si hay una lectura nueva del sensor de distancia
+    (*filtro).beta = 0; // Indica si hay una lectura nueva del OFS
+    (*filtro).gamma = 0; // Indica si hay una lectura nueva del sensor de distancia
     double temp[3] = {0, 0, 9.81};
-    (*filtro).g = vec2quat(temp);
+    (*filtro).qg = vec2quat(temp);
     (*filtro).M00 = N_OBS_00; // Cantidad de observaciones con beta=gamma=0
     (*filtro).M01 = N_OBS_01; // Cantidad de observaciones con beta=0, gamma=1
     (*filtro).M10 = N_OBS_10; // Cantidad de observaciones con beta=1, gamma=0
     (*filtro).M11 = N_OBS_11; // Cantidad de observaciones con beta=1, gamma=1
-    zeros((*filtro).states, N_STATES, 1); //p, v, q
+    mat_zeros((*filtro).states, N_STATES, 1); //p, v, q
     (*filtro).states[N_P + N_V] = 1; //q1 = 1;
-    zeros(*(*filtro).cov, N_STATES, N_STATES); // Matriz de covarianza de estados
+    mat_zeros(*(*filtro).cov, N_STATES, N_STATES); // Matriz de covarianza de estados
     mat_addeye(*(*filtro).cov, N_STATES);
-    zeros(*(*filtro).F, N_STATES, N_STATES);
-    zeros(*(*filtro).W, N_STATES, N_NOISE);
+    mat_zeros(*(*filtro).F, N_STATES, N_STATES);
+    mat_zeros(*(*filtro).W, N_STATES, N_NOISE);
     /* Wk */
     // d(velocidad) / d(uax)
     (*filtro).W[N_P][0] = 1;
@@ -23,7 +23,7 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     (*filtro).W[N_P+1][1] = 1;
     // d(velocidad) / d(uaz)
     (*filtro).W[N_P+2][2] = 1;
-    zeros(*(*filtro).Q, N_NOISE, N_NOISE);
+    mat_zeros(*(*filtro).Q, N_NOISE, N_NOISE);
     (*filtro).Q[0][0] = 0.1; //uax
     (*filtro).Q[1][1] = 0.1; //uay
     (*filtro).Q[2][2] = 0.1; //uaz
@@ -114,7 +114,7 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     // Queremos pasar la acel de cuerpo a mundo
     aux = quat_mult(qa_meas, quat_conjugate(q)); // (qa_meas) * -q
     aux = quat_mult(q, aux); // q * (qa_meas) * -q
-    quat_sub(&aux, aux, (*filtro).g); // q * (qa_meas) * -q - g
+    quat_sub(&aux, aux, (*filtro).qg); // q * (qa_meas) * -q - g
     quat2vec(aux, aux3);
     matmul_scalar(aux3, N_V, 1, u.dt); // dt (a_meas - g)
     add(v, aux3, (*filtro).states + N_P, N_V, 1); // Vk+1 = Vk + dt * (a - g)
@@ -132,5 +132,9 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
 void correction_step(ofs_ekf_t* filtro, mediciones_t z, double dt){
 
 
+if((*filtro).beta == 1 && (*filtro).gamma == 1){
 
+}
+(*filtro).beta = 0;
+(*filtro).gamma = 0;
 };

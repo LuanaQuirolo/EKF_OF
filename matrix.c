@@ -6,15 +6,13 @@
  *                  Padron: 102102
 ****************************************************************/
 
-#ifndef MATRIX_H_
-#define MATRIX_H_
-#include <math.h>
+#include "matrix.h"
 
 /* Cholesky-decomposition matrix-inversion code, adapted from
    http://jean-pierre.moreau.pagesperso-orange.fr/Cplus/choles_cpp.txt */
 
 
-static inline int choldc1(double * a, double * p, int n) {
+int choldc1(double * a, double * p, int n) {
     int i,j,k;
     double sum;
 
@@ -39,7 +37,7 @@ static inline int choldc1(double * a, double * p, int n) {
     return 0; /* success */
 }
 
-static inline int choldcsl(double * A, double * a, double * p, int n) 
+int choldcsl(double * A, double * a, double * p, int n) 
 {
     int i,j,k; double sum;
     for (i = 0; i < n; i++) 
@@ -61,7 +59,7 @@ static inline int choldcsl(double * A, double * a, double * p, int n)
 }
 
 
-static inline int cholsl(double * A, double * a, double * p, int n) 
+int cholsl(double * A, double * a, double * p, int n) 
 {
     int i,j,k;
     if (choldcsl(A,a,p,n)) return 1;
@@ -91,7 +89,7 @@ static inline int cholsl(double * A, double * a, double * p, int n)
 }
 
 // Set all components from matrix A to zero
-static inline void zeros(double * a, int m, int n)
+void mat_zeros(double * a, int m, int n)
 {
     int j;
     for (j=0; j<m*n; ++j)
@@ -99,7 +97,7 @@ static inline void zeros(double * a, int m, int n)
 }
 
 /* C <- A * B */
-static inline void mulmat(double * a, double * b, double * c, int arows, int acols, int bcols)
+void mulmat(double * a, double * b, double * c, int arows, int acols, int bcols)
 {
     int i, j,l;
 
@@ -112,7 +110,7 @@ static inline void mulmat(double * a, double * b, double * c, int arows, int aco
 }
 
 /* Y <- A * X */
-static inline void mulvec(double * a, double * x, double * y, int m, int n)
+void mulvec(double * a, double * x, double * y, int m, int n)
 {
     int i, j;
 
@@ -124,7 +122,7 @@ static inline void mulvec(double * a, double * x, double * y, int m, int n)
 }
 
 /* trans(A) <- A */
-static inline void transpose(double * a, double * at, int m, int n)
+void transpose(double * a, double * at, int m, int n)
 {
     int i,j;
 
@@ -135,7 +133,7 @@ static inline void transpose(double * a, double * at, int m, int n)
 }
 
 /* A <- A + B */
-static inline void accum(double * a, double * b, int m, int n)
+void accum(double * a, double * b, int m, int n)
 {        
     int i,j;
 
@@ -145,7 +143,7 @@ static inline void accum(double * a, double * b, int m, int n)
 }
 
 /* C <- A + B */
-static inline void add(double * a, double * b, double * c, int m, int n)
+void add(double * a, double * b, double * c, int m, int n)
 {
     int i,j;
 
@@ -156,7 +154,7 @@ static inline void add(double * a, double * b, double * c, int m, int n)
 
 
 /* C <- A - B */
-static inline void sub(double * a, double * b, double * c, int n)
+void sub(double * a, double * b, double * c, int n)
 {
     int j;
 
@@ -165,7 +163,7 @@ static inline void sub(double * a, double * b, double * c, int n)
 }
 
 /* -A <- A */
-static inline void mat_negate(double * a, int m, int n)
+void mat_negate(double * a, int m, int n)
 {        
     int i, j;
 
@@ -175,7 +173,7 @@ static inline void mat_negate(double * a, int m, int n)
 }
 
 /* A + I <- A */
-static inline void mat_addeye(double * a, int n)
+void mat_addeye(double * a, int n)
 {
     int i;
     for (i=0; i<n; ++i)
@@ -183,7 +181,7 @@ static inline void mat_addeye(double * a, int n)
 }
 
 /* bA <- A */
-static inline void matmul_scalar(double * a, int m, int n, double b)
+void matmul_scalar(double * a, int m, int n, double b)
 {        
     int i, j;
 
@@ -193,7 +191,7 @@ static inline void matmul_scalar(double * a, int m, int n, double b)
 }
 
 /* C <- bA */
-static inline void matmul_scalar2(double * a, double * c, int m, int n, double b)
+void matmul_scalar2(double * a, double * c, int m, int n, double b)
 {        
     int i, j;
 
@@ -201,5 +199,3 @@ static inline void matmul_scalar2(double * a, double * c, int m, int n, double b
         for(j=0; j<n; ++j)
             c[i*n+j] = b * a[i*n+j];
 }
-
-#endif /* MATRIX_H_ */
