@@ -40,17 +40,33 @@ void print_cov(ofs_ekf_t *filtro) {
     }
 }
 
+void print_jac(double* jacobiano) {
+    printf("Jacobiano\n");
+    for (int i = 0; i < N_CORR_NOISE; i++) {
+        for (int j = 0; j < N_STATES; j++) {
+            printf("%f ", jacobiano[i*N_STATES+j]);
+        }
+        printf("\n");
+    }
+}
+
 int main() {
     ofs_ekf_t filtro;
     ofs_ekf_init(&filtro);
+    filtro.states[2] = 1;
     filtro.states[3] = 0;
     filtro.states[4] = 0;
     filtro.states[5] = 0;
     mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
-    for (int i = 0; i < 2; i++) {
-        prediction_step(&filtro, meas);
-        print_states(filtro);
+    //for (int i = 0; i < 2; i++) {
+    //    prediction_step(&filtro, meas);
+    //    print_states(filtro);
         // print_cov(&filtro);
-    }
+    //}
+    mat_zeros(*(filtro).H, N_CORR_NOISE, N_STATES);
+    //IMU_states(&filtro, 0);
+    //TOFS_states(&filtro, N_IMU);
+    OFS_states(&filtro, N_IMU+N_TOFS);
+    print_jac(*(filtro.H));
     return 0;
 }

@@ -22,7 +22,12 @@
 #define N_V 3
 #define N_Q 4
 #define N_STATES 10 //N_P+N_V+N_Q -> La cantidad de estados total es la suma de sus componentes
-#define N_NOISE 7
+#define N_PROC_NOISE 7 // a, w, z
+#define N_CORR_NOISE 9 // a, w, flow_x, flow_y, z
+#define N_IMU 6
+#define N_OFS 2
+#define N_TOFS 1
+#define g 9.81
 
 typedef struct mediciones{
   double dt;
@@ -52,8 +57,9 @@ typedef struct ofs_ekf {
     double states[N_STATES]; //p, v, q
     double cov[N_STATES][N_STATES]; // Matriz de covarianza de estados
     double F[N_STATES][N_STATES]; // Derivada de vector de estados respecto de si mismo
-    double W[N_STATES][N_NOISE]; // Derivada de vector de estados respecto de ruidos
-    double Q[N_NOISE][N_NOISE]; // Matriz ruidos
+    double W[N_STATES][N_PROC_NOISE]; // Derivada de vector de estados respecto de ruidos
+    double H[N_CORR_NOISE][N_STATES]; // Derivada de modelo de medicion respecto a los estados
+    double Q[N_PROC_NOISE][N_PROC_NOISE]; // Matriz ruidos
     uint8_t Npix; // Cantidad de píxeles
     float FOV_OF; // FOV del sensor de OF
     float f;  // Factor de conversión
@@ -73,5 +79,20 @@ typedef struct ofs_ekf {
 * Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.
 * Pos: El estado se encuentra corregido en base a las mediciones. */
   void correction_step(ofs_ekf_t* filtro, mediciones_t z, double dt);
+
+/* Calcula el jacobiano del modelo de la IMU respecto al estado
+* Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.
+* Pos: El jacobiano tiene calculada la parte de la IMU posicionada en las filas segun el offset. */
+  void IMU_states(ofs_ekf_t* filtro, int8_t offset);
+
+/* Calcula el jacobiano del modelo del sensor de flujo optico respecto al estado
+* Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.
+* Pos: El jacobiano tiene calculada la parte del sensor de flujo optico posicionada en las filas segun el offset. */
+  void OFS_states(ofs_ekf_t* filtro, int8_t offset);
+
+  /* Calcula el jacobiano del modelo del sensor de diistancia respecto al estado
+* Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.
+* Pos: El jacobiano tiene calculada la parte del sensor de diistancia posicionada en las filas segun el offset. */
+  void TOFS_states(ofs_ekf_t* filtro, int8_t offset);
 
 #endif /* EKF_H_ */

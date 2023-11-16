@@ -15,7 +15,7 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     mat_zeros(*(*filtro).cov, N_STATES, N_STATES); // Matriz de covarianza de estados
     mat_addeye(*(*filtro).cov, N_STATES);
     mat_zeros(*(*filtro).F, N_STATES, N_STATES);
-    mat_zeros(*(*filtro).W, N_STATES, N_NOISE);
+    mat_zeros(*(*filtro).W, N_STATES, N_PROC_NOISE);
     /* Wk */
     // d(velocidad) / d(uax)
     (*filtro).W[N_P][0] = 1;
@@ -23,7 +23,7 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     (*filtro).W[N_P+1][1] = 1;
     // d(velocidad) / d(uaz)
     (*filtro).W[N_P+2][2] = 1;
-    mat_zeros(*(*filtro).Q, N_NOISE, N_NOISE);
+    mat_zeros(*(*filtro).Q, N_PROC_NOISE, N_PROC_NOISE);
     (*filtro).Q[0][0] = 0.1; //uax
     (*filtro).Q[1][1] = 0.1; //uay
     (*filtro).Q[2][2] = 0.1; //uaz
@@ -54,7 +54,7 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     double aux5[N_STATES][N_STATES];
     double aux6[N_STATES][N_STATES];
     double aux7[N_STATES][N_STATES];
-    double Wt[N_NOISE][N_STATES];
+    double Wt[N_PROC_NOISE][N_STATES];
     double Ft[N_STATES][N_STATES];
 
     /* Fk */
@@ -98,9 +98,9 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     (*filtro).F[N_P+N_V+3][N_P+N_V+3] = 1;
 
     /* Covarianza a priori */
-    transpose(*(*filtro).W, *Wt, N_STATES, N_NOISE);
-    mulmat(*(*filtro).Q, *Wt, *aux4, N_NOISE, N_NOISE, N_STATES);
-    mulmat(*(*filtro).W, *aux4, *aux6, N_STATES, N_STATES, N_NOISE);
+    transpose(*(*filtro).W, *Wt, N_STATES, N_PROC_NOISE);
+    mulmat(*(*filtro).Q, *Wt, *aux4, N_PROC_NOISE, N_PROC_NOISE, N_STATES);
+    mulmat(*(*filtro).W, *aux4, *aux6, N_STATES, N_STATES, N_PROC_NOISE);
     transpose(*(*filtro).F, *Ft, N_STATES, N_STATES);
     mulmat(*(*filtro).cov, *Ft, *aux5, N_STATES, N_STATES, N_STATES);
     mulmat(*(*filtro).F, *aux5, *aux7, N_STATES, N_STATES, N_STATES);
@@ -131,6 +131,7 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
 
 void correction_step(ofs_ekf_t* filtro, mediciones_t z, double dt){
 
+mat_zeros(*(*filtro).H, N_CORR_NOISE, N_STATES);
 
 if((*filtro).beta == 1 && (*filtro).gamma == 1){
 
@@ -138,3 +139,62 @@ if((*filtro).beta == 1 && (*filtro).gamma == 1){
 (*filtro).beta = 0;
 (*filtro).gamma = 0;
 };
+
+void IMU_states(ofs_ekf_t* filtro, int8_t offset){
+
+// partial_ax / partial_q
+(*filtro).H[offset + 0][6] = -2 * g * ((*filtro).states[N_P+N_V+2]);     
+(*filtro).H[offset + 0][7] = 2 * g * ((*filtro).states[N_P+N_V+3]);     
+(*filtro).H[offset + 0][8] = -2 * g * ((*filtro).states[N_P+N_V]);     
+(*filtro).H[offset + 0][9] = 2 * g * ((*filtro).states[N_P+N_V+1]);  
+// partial_ay / partial_q   
+(*filtro).H[offset + 1][6] = 2 * g * ((*filtro).states[N_P+N_V+1]);      
+(*filtro).H[offset + 1][7] = 2 * g * ((*filtro).states[N_P+N_V]);      
+(*filtro).H[offset + 1][8] = 2 * g * ((*filtro).states[N_P+N_V+3]);     
+(*filtro).H[offset + 1][9] = 2 * g * ((*filtro).states[N_P+N_V+2]);
+// partial_az / partial_q  
+(*filtro).H[offset + 2][6] = 2 * g * ((*filtro).states[N_P+N_V]);      
+(*filtro).H[offset + 2][7] = -2 * g * ((*filtro).states[N_P+N_V+1]);      
+(*filtro).H[offset + 2][8] = -2 * g * ((*filtro).states[N_P+N_V+2]);     
+(*filtro).H[offset + 2][9] = 2 * g * ((*filtro).states[N_P+N_V+3]);
+}
+
+void OFS_states(ofs_ekf_t* filtro, int8_t offset){
+
+double pz = (*filtro).states[2];
+double vx = (*filtro).states[N_P];
+double vy = (*filtro).states[N_P + 1];
+double vz = (*filtro).states[N_P + 2];
+quaternion_t q = {(*filtro).states[N_P + N_V + 0], (*filtro).states[N_P + N_V + 1], (*filtro).states[N_P + N_V + 2], (*filtro).states[N_P + N_V + 3]};
+// partial_nx / partial_pz
+(*filtro).H[offset][2] = 1;     
+// partial_nx / partial_v   
+(*filtro).H[offset][3] = 2;      
+(*filtro).H[offset][4] = 3;      
+(*filtro).H[offset][5] = 4;     
+// partial_nx / partial_q  
+(*filtro).H[offset][6] = 5;    
+(*filtro).H[offset][7] = 6;    
+(*filtro).H[offset][8] = 7;
+(*filtro).H[offset][9] = 8;
+// partial_ny / partial_pz
+(*filtro).H[offset + 1][2] = 1;     
+// partial_ny / partial_v   
+(*filtro).H[offset + 1][3] = 2;      
+(*filtro).H[offset + 1][4] = 3;      
+(*filtro).H[offset + 1][5] = 4;     
+// partial_ny / partial_q  
+(*filtro).H[offset + 1][6] = 5;    
+(*filtro).H[offset + 1][7] = 6;    
+(*filtro).H[offset + 1][8] = 7;
+(*filtro).H[offset + 1][9] = 8;
+}
+
+void TOFS_states(ofs_ekf_t* filtro, int8_t offset){
+// partial_tofs / partial_pz
+(*filtro).H[offset + 0][2] = 1/(2 * (pow((*filtro).states[N_P+N_V], 2) + pow((*filtro).states[N_P+N_V+3], 2)) - 1); 
+// partial_tofs / partial_q1  
+(*filtro).H[offset + 0][N_P + N_V] = -4 * (*filtro).states[2] * (*filtro).states[N_P+N_V] * pow((*filtro).H[offset + 0][2], 2);
+// partial_tofs / partial_q4
+(*filtro).H[offset + 0][N_P + N_V + 3] = -4 * (*filtro).states[2] * (*filtro).states[N_P+N_V+3] * pow((*filtro).H[offset + 0][2], 2);
+}
