@@ -14,10 +14,10 @@
 #include "quaternions.h"
 #include <stdint.h>
 
-#define N_OBS_00 6
-#define N_OBS_01 8
-#define N_OBS_10 7
-#define N_OBS_11 9
+#define N_OBS_00 3
+#define N_OBS_01 5
+#define N_OBS_10 4
+#define N_OBS_11 6
 #define N_P 3
 #define N_V 3
 #define N_Q 4
@@ -55,15 +55,19 @@ typedef struct ofs_ekf {
     uint8_t M10; // Cantidad de observaciones con beta=1, gamma=0
     uint8_t M11; // Cantidad de observaciones con beta=1, gamma=1
     double states[N_STATES]; //p, v, q
+    double measurements[N_OBS_11]; //a, w, flow, z
     double cov[N_STATES][N_STATES]; // Matriz de covarianza de estados
     double F[N_STATES][N_STATES]; // Derivada de vector de estados respecto de si mismo
     double W[N_STATES][N_PROC_NOISE]; // Derivada de vector de estados respecto de ruidos
     double H[N_CORR_NOISE][N_STATES]; // Derivada de modelo de medicion respecto a los estados
-    double Q[N_PROC_NOISE][N_PROC_NOISE]; // Matriz ruidos
+    double G[N_STATES][N_OBS_11]; // Ganancia de Kalman
+    double Q[N_PROC_NOISE][N_PROC_NOISE]; // Matriz ruidos proceso
+    double R[N_OBS_11][N_OBS_11]; // Matriz ruidos mediciones
     uint8_t Npix; // Cantidad de píxeles
     float FOV_OF; // FOV del sensor de OF
     float f;  // Factor de conversión
-    int puntero;
+    u_int8_t puntero;
+    quaternion_t aux;
 } ofs_ekf_t; 
 
   void ofs_ekf_init(ofs_ekf_t* filtro);
@@ -78,7 +82,7 @@ typedef struct ofs_ekf {
 * las mediciones disponibles.
 * Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.
 * Pos: El estado se encuentra corregido en base a las mediciones. */
-  void correction_step(ofs_ekf_t* filtro, mediciones_t z, double dt);
+  void correction_step(ofs_ekf_t* filtro, mediciones_t *z);
 
 /* Calcula el jacobiano del modelo de la IMU respecto al estado
 * Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.
@@ -88,7 +92,7 @@ typedef struct ofs_ekf {
 /* Calcula el jacobiano del modelo del sensor de flujo optico respecto al estado
 * Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.
 * Pos: El jacobiano tiene calculada la parte del sensor de flujo optico posicionada en las filas segun el offset. */
-  void OFS_states(ofs_ekf_t* filtro, int8_t offset);
+  void OFS_states(ofs_ekf_t* filtro, int8_t offset, mediciones_t *z);
 
   /* Calcula el jacobiano del modelo del sensor de diistancia respecto al estado
 * Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.

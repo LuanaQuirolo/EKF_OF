@@ -5,6 +5,14 @@
 
 void print_states(ofs_ekf_t filtro);
 void print_cov(ofs_ekf_t *filtro);
+void print_expected_measurements(ofs_ekf_t filtro);
+
+void print_expected_measurements(ofs_ekf_t filtro){
+    printf("Mediciones esperadas\n");
+    for (int i = 0; i < N_OBS_11; i++) {
+        printf("%f ", filtro.measurements[i]);
+    }
+}
 
 void print_states(ofs_ekf_t filtro) {
     float roll = 0.0, pitch = 0.0, yaw = 0.0;
@@ -54,9 +62,11 @@ int main() {
     ofs_ekf_t filtro;
     ofs_ekf_init(&filtro);
     filtro.states[2] = 1;
-    filtro.states[3] = 0;
+    filtro.states[3] = 1;
     filtro.states[4] = 0;
     filtro.states[5] = 0;
+    filtro.beta = 0;
+    filtro.gamma = 0;
     mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
     //for (int i = 0; i < 2; i++) {
     //    prediction_step(&filtro, meas);
@@ -66,7 +76,11 @@ int main() {
     mat_zeros(*(filtro).H, N_CORR_NOISE, N_STATES);
     //IMU_states(&filtro, 0);
     //TOFS_states(&filtro, N_IMU);
-    OFS_states(&filtro, N_IMU+N_TOFS);
-    print_jac(*(filtro.H));
+    //OFS_states(&filtro, N_IMU+N_TOFS, &meas);
+    print_cov(&filtro);
+    correction_step(&filtro, &meas);
+    print_cov(&filtro);
+    print_expected_measurements(filtro);
+    //print_jac(*(filtro.H));
     return 0;
 }
