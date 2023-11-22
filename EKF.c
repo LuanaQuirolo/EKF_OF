@@ -202,6 +202,7 @@ double aux4[meas_counter][meas_counter];
 double aux5[meas_counter][meas_counter];
 double aux6[meas_counter];
 double aux7[N_STATES][N_STATES];
+double aux8[N_STATES];
 transpose(*filtro->H, *Ht, meas_counter, N_STATES); 
 mulmat(*filtro->cov, *Ht, *aux3, N_STATES, N_STATES, meas_counter); // aux3 = cov * Ht
 mulmat(*filtro->H, *aux3, *aux4, meas_counter, N_STATES, meas_counter); // aux4 = H * cov * Ht
@@ -211,8 +212,8 @@ mulmat(*aux3, *aux5, *filtro->G, N_STATES, meas_counter, meas_counter); // G = c
 
 /*************************** Correccion **************************/
 sub(meas, filtro->measurements, aux6, meas_counter); // aux6 = z_medido - z_esperado
-mulvec(*filtro->G, aux6, meas, N_STATES, meas_counter); // meas = G(z_medido - z_esperado)
-accum(filtro->states, aux6, N_STATES, 1); // estado = estado + G(z_medido - z_esperado)
+mulvec(*filtro->G, aux6, aux8, N_STATES, meas_counter); // aux8 = G(z_medido - z_esperado)
+accum(filtro->states, aux8, N_STATES, 1); // estado = estado + G(z_medido - z_esperado)
 
 /*************************** Covarianza **************************/
 mulmat(*filtro->G, *filtro->H, *aux3, N_STATES, meas_counter, N_STATES); //  aux3 = G * H

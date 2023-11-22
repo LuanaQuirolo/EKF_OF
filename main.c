@@ -65,8 +65,8 @@ int main() {
     filtro.states[3] = 1;
     filtro.states[4] = 0;
     filtro.states[5] = 0;
-    filtro.beta = 0;
-    filtro.gamma = 0;
+    filtro.beta = 1;
+    filtro.gamma = 1;
     mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
     //for (int i = 0; i < 2; i++) {
     //    prediction_step(&filtro, meas);
