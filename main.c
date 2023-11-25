@@ -2,6 +2,8 @@
 #include "matrix.h"
 #include "EKF.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 void print_states(ofs_ekf_t filtro);
 void print_cov(ofs_ekf_t *filtro);
@@ -10,8 +12,9 @@ void print_expected_measurements(ofs_ekf_t filtro);
 void print_expected_measurements(ofs_ekf_t filtro){
     printf("Mediciones esperadas\n");
     for (int i = 0; i < N_OBS_11; i++) {
-        printf("%f ", filtro.measurements[i]);
+        printf("%f ", filtro.exp_meas[i]);
     }
+    printf("\n");
 }
 
 void print_states(ofs_ekf_t filtro) {
@@ -48,6 +51,15 @@ void print_cov(ofs_ekf_t *filtro) {
     }
 }
 
+void print_trace_cov(ofs_ekf_t *filtro) {
+    printf("Traza de covarianza\n");
+    double suma = 0;
+    for (int i = 0; i < N_STATES; i++) {
+        suma += filtro->cov[i][i];
+    }
+    printf("%f \n", suma);
+}
+
 void print_jac(double* jacobiano) {
     printf("Jacobiano\n");
     for (int i = 0; i < N_CORR_NOISE; i++) {
@@ -62,25 +74,51 @@ int main() {
     ofs_ekf_t filtro;
     ofs_ekf_init(&filtro);
     filtro.states[2] = 1;
-    filtro.states[3] = 1;
+    filtro.states[3] = 0;
     filtro.states[4] = 0;
     filtro.states[5] = 0;
-    filtro.beta = 1;
-    filtro.gamma = 1;
-    mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
+    //print_states(filtro);
+    srand(time(NULL));
+    mediciones_t meas = {0.1, 0.2, 0.3, 9.81, 0.4, 0.5, 0.6, 0.7, 0.8, 1};
     //for (int i = 0; i < 2; i++) {
     //    prediction_step(&filtro, meas);
     //    print_states(filtro);
         // print_cov(&filtro);
     //}
-    mat_zeros(*(filtro).H, N_CORR_NOISE, N_STATES);
-    //IMU_states(&filtro, 0);
-    //TOFS_states(&filtro, N_IMU);
-    //OFS_states(&filtro, N_IMU+N_TOFS, &meas);
-    print_cov(&filtro);
-    correction_step(&filtro, &meas);
-    print_cov(&filtro);
-    print_expected_measurements(filtro);
-    //print_jac(*(filtro.H));
+    for (int i = 0; i < 1; i++){
+        filtro.beta = 1;
+        filtro.gamma = 1;
+        meas.az = 9.81 + 0.1 * rand() / (RAND_MAX + 1);
+        prediction_step(&filtro, meas);
+        //print_states(filtro);
+        //print_trace_cov(&filtro);
+        //correction_step(&filtro, &meas);
+        //print_states(filtro);
+        //print_expected_measurements(filtro);
+        //print_trace_cov(&filtro);
+        printf("----------------------------------------\n");
+    }
+    /*int size = 2;
+    double matrix[size][size];
+    double inv[size][size];
+    double aux[size];
+    mat_zeros(*matrix, size, size);
+    mat_zeros(*inv, size, size);
+    matrix[0][0] = 10;
+    matrix[1][1] = 10;
+    matrix[0][1] = 10;
+    cholsl(*matrix, *inv, aux, size); // aux11 = inv(H * cov * Ht + R)
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            printf("%f ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            printf("%f ", inv[i][j]);
+        }
+        printf("\n");
+    }*/
     return 0;
 }
