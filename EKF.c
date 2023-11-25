@@ -99,25 +99,25 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     filtro->F[N_P+2][N_P+N_V+3] = u.dt * (2*(u.ax) * filtro->q.q2 + 2*(u.ay)*filtro->q.q3 + 2*(u.az)*filtro->q.q4);
     //d(q) / d(q1)
     //filtro->F[N_P+N_V][N_P+N_V] = 1;
-    filtro->F[N_P+N_V+1][N_P+N_V] = -u.wx * u.dt / 2;
-    filtro->F[N_P+N_V+2][N_P+N_V] = -u.wy * u.dt / 2;
-    filtro->F[N_P+N_V+3][N_P+N_V] = -u.wz * u.dt / 2;
+    filtro->F[N_P+N_V+1][N_P+N_V] = u.wx * u.dt / 2;
+    filtro->F[N_P+N_V+2][N_P+N_V] = u.wy * u.dt / 2;
+    filtro->F[N_P+N_V+3][N_P+N_V] = u.wz * u.dt / 2;
     //d(q) / d(q2)
-    filtro->F[N_P+N_V][N_P+N_V+1] = u.wx * u.dt / 2;
+    filtro->F[N_P+N_V][N_P+N_V+1] = -u.wx * u.dt / 2;
     //filtro->F[N_P+N_V+1][N_P+N_V+1] = 1;
-    filtro->F[N_P+N_V+2][N_P+N_V+1] = u.wz * u.dt / 2;
-    filtro->F[N_P+N_V+3][N_P+N_V+1] = -u.wy * u.dt / 2;
+    filtro->F[N_P+N_V+2][N_P+N_V+1] = -u.wz * u.dt / 2;
+    filtro->F[N_P+N_V+3][N_P+N_V+1] = u.wy * u.dt / 2;
     //d(q) / d(q3)
-    filtro->F[N_P+N_V][N_P+N_V+2] = u.wy * u.dt / 2;
-    filtro->F[N_P+N_V+1][N_P+N_V+2] = -u.wz * u.dt / 2;
+    filtro->F[N_P+N_V][N_P+N_V+2] = -u.wy * u.dt / 2;
+    filtro->F[N_P+N_V+1][N_P+N_V+2] = u.wz * u.dt / 2;
     //filtro->F[N_P+N_V+2][N_P+N_V+2] = 1;
-    filtro->F[N_P+N_V+3][N_P+N_V+2] = u.wx * u.dt / 2;
+    filtro->F[N_P+N_V+3][N_P+N_V+2] = -u.wx * u.dt / 2;
     //d(q) / d(q4)
-    filtro->F[N_P+N_V][N_P+N_V+3] = u.wz * u.dt / 2;
-    filtro->F[N_P+N_V+1][N_P+N_V+3] = u.wy * u.dt / 2;
-    filtro->F[N_P+N_V+2][N_P+N_V+3] = -u.wx * u.dt / 2;
+    filtro->F[N_P+N_V][N_P+N_V+3] = -u.wz * u.dt / 2;
+    filtro->F[N_P+N_V+1][N_P+N_V+3] = -u.wy * u.dt / 2;
+    filtro->F[N_P+N_V+2][N_P+N_V+3] = u.wx * u.dt / 2;
     //filtro->F[N_P+N_V+3][N_P+N_V+3] = 1;
-    //print_gain("F", N_STATES, N_STATES, *filtro->F);
+    print_gain("F", N_STATES, N_STATES, *filtro->F);
     /* Covarianza a priori */
     transpose(*filtro->W, *filtro->Wt, N_STATES, N_PROC_NOISE);
     mulmat(*filtro->Q, *filtro->Wt, *filtro->aux4, N_PROC_NOISE, N_PROC_NOISE, N_STATES); // aux4 = Q * Wt
@@ -248,8 +248,8 @@ mulmat(*filtro->G, *filtro->H, *filtro->aux9, N_STATES, filtro->meas_counter, N_
 mulmat(*filtro->aux9, *filtro->cov, *filtro->aux7, N_STATES, N_STATES, N_STATES); // aux7 = G * H * cov_priori
 mat_negate(*filtro->aux7, N_STATES, N_STATES); // aux7 = - G * H * cov_priori
 accum(*filtro->cov, *filtro->aux7, N_STATES, N_STATES); // cov = cov_priori - G * H * cov_priori
-filtro->beta = 0;
-filtro->gamma = 0;
+(*filtro).beta = 0;
+(*filtro).gamma = 0;
 }
 
 void IMU_states(ofs_ekf_t* filtro, int8_t offset){
