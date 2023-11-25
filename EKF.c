@@ -42,13 +42,14 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     // d(velocidad) / d(uaz)
     filtro->W[N_P+2][2] = 1;
     mat_zeros(*filtro->Q, N_PROC_NOISE, N_PROC_NOISE);
-    filtro->Q[0][0] = 0.1; //uax
-    filtro->Q[1][1] = 0.1; //uay
-    filtro->Q[2][2] = 0.1; //uaz
-    filtro->Q[3][3] = 0.1; //uwx
-    filtro->Q[4][4] = 0.1; //uwy
-    filtro->Q[5][5] = 0.1; //uwz
-    filtro->Q[6][6] = 0.1; //ubsz
+    mat_zeros(*filtro->R, N_CORR_NOISE, N_CORR_NOISE);
+    filtro->Q[0][0] = 0.01; //uax
+    filtro->Q[1][1] = 0.01; //uay
+    filtro->Q[2][2] = 0.01; //uaz
+    filtro->Q[3][3] = 0.001; //uwx
+    filtro->Q[4][4] = 0.001; //uwy
+    filtro->Q[5][5] = 0.001; //uwz
+    filtro->Q[6][6] = 0.01; //ubsz
     filtro->R[0][0] = U_A; //uax
     filtro->R[1][1] = U_A; //uay
     filtro->R[2][2] = U_A; //uaz
@@ -117,7 +118,6 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     filtro->F[N_P+N_V+1][N_P+N_V+3] = -u.wy * u.dt / 2;
     filtro->F[N_P+N_V+2][N_P+N_V+3] = u.wx * u.dt / 2;
     //filtro->F[N_P+N_V+3][N_P+N_V+3] = 1;
-    print_gain("F", N_STATES, N_STATES, *filtro->F);
     /* Covarianza a priori */
     transpose(*filtro->W, *filtro->Wt, N_STATES, N_PROC_NOISE);
     mulmat(*filtro->Q, *filtro->Wt, *filtro->aux4, N_PROC_NOISE, N_PROC_NOISE, N_STATES); // aux4 = Q * Wt
@@ -126,7 +126,6 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     mulmat(*filtro->cov, *filtro->Ft, *filtro->aux5, N_STATES, N_STATES, N_STATES); // aux5 = cov * Ft
     mulmat(*filtro->F, *filtro->aux5, *filtro->aux7, N_STATES, N_STATES, N_STATES); // aux7 = F * cov * Ft
     add(*filtro->aux6, *filtro->aux7, *filtro->cov, N_STATES, N_STATES); // cov = F * cov * Ft +  W * Q * Wt
-    print_gain("Cov", N_STATES, N_STATES, *filtro->cov);
     /* Paso de prediccion */
     // Posicion
     matmul_scalar2(filtro->v, filtro->aux2, N_V, 1, u.dt); // aux2 = Vk = dt * Vk
@@ -224,15 +223,10 @@ else if(filtro->beta == 0 && filtro->gamma == 1){
 /*************************** Ganancia de Kalman **************************/
 
 transpose(*filtro->H, *filtro->Ht, filtro->meas_counter, N_STATES); 
-print_gain("H", filtro->meas_counter, N_STATES, *filtro->H);
-print_gain("Ht", N_STATES, filtro->meas_counter, *filtro->Ht);
 mulmat(*filtro->cov, *filtro->Ht, *filtro->aux9, N_STATES, N_STATES, filtro->meas_counter); // aux9 = cov * Ht
-print_gain("Cov * Ht", N_STATES, filtro->meas_counter, *filtro->Ht);
 mulmat(*filtro->H, *filtro->aux9, *filtro->aux10, filtro->meas_counter, N_STATES, filtro->meas_counter); // aux10 = H * cov * Ht
 accum(*filtro->aux10, *filtro->R, filtro->meas_counter, filtro->meas_counter); // aux10 = H * cov * Ht + R
-print_gain("H*Cov*Ht+R", filtro->meas_counter, filtro->meas_counter, *filtro->aux10);
 cholsl(*filtro->aux10, *filtro->aux11, filtro->aux12, filtro->meas_counter); // aux11 = inv(H * cov * Ht + R)
-print_gain("inversa", filtro->meas_counter, filtro->meas_counter, *filtro->aux11);
 mulmat(*filtro->aux9, *filtro->aux11, *filtro->G, N_STATES, filtro->meas_counter, filtro->meas_counter); // G = cov * Ht * inv(H * cov * Ht + R)
 
 /*************************** Correccion **************************/

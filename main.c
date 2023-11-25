@@ -79,25 +79,34 @@ int main() {
     filtro.states[5] = 0;
     //print_states(filtro);
     srand(time(NULL));
-    mediciones_t meas = {0.1, 0.2, 0.3, 9.81, 0.4, 0.5, 0.6, 0.7, 0.8, 1};
+    mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
     //for (int i = 0; i < 2; i++) {
     //    prediction_step(&filtro, meas);
     //    print_states(filtro);
         // print_cov(&filtro);
     //}
-    for (int i = 0; i < 1; i++){
+    for (int i = 0; i < 10; i++){
         filtro.beta = 1;
         filtro.gamma = 1;
-        meas.az = 9.81 + 0.1 * rand() / (RAND_MAX + 1);
+        meas.ax = 0 + U_A * rand() / (RAND_MAX + 1);
+        meas.ay = 0 + U_A * rand() / (RAND_MAX + 1);
+        meas.az = 9.81 + U_A * rand() / (RAND_MAX + 1);
+        meas.wx = 0 + 0.1 * rand() / (RAND_MAX + 1);
+        meas.wy = 0 + 0.1 * rand() / (RAND_MAX + 1);
+        meas.wz = 0.1 + 0.1 * rand() / (RAND_MAX + 1);
+        meas.ofx = 0 + 0.1 * rand() / (RAND_MAX + 1);
+        meas.ofy = 0 + 0.1 * rand() / (RAND_MAX + 1);
+        meas.range = 1 + 0.1 * rand() / (RAND_MAX + 1);
         prediction_step(&filtro, meas);
         //print_states(filtro);
         //print_trace_cov(&filtro);
-        //correction_step(&filtro, &meas);
+        correction_step(&filtro, &meas);
         //print_states(filtro);
         //print_expected_measurements(filtro);
         //print_trace_cov(&filtro);
         printf("----------------------------------------\n");
     }
+    print_states(filtro);
     /*int size = 2;
     double matrix[size][size];
     double inv[size][size];
