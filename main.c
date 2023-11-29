@@ -95,33 +95,31 @@ int main() {
     srand(time(NULL));
     filtro.beta = 1;
     filtro.gamma = 1;
-    mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0, 0, 0, 1};
-    //for (int i = 0; i < 2; i++) {
-    //    prediction_step(&filtro, meas);
-    //    print_states(filtro);
-        // print_cov(&filtro);
-    //}
-    for (int i = 0; i < 1000; i++){
-        /*
-        meas.ax = 0 + 0.0001 * rand() / (RAND_MAX + 1);
-        meas.ay = 0 + 0.0001 * rand() / (RAND_MAX + 1);
-        meas.az = -9.81 + 0.0001 * rand() / (RAND_MAX + 1);
-        meas.wx = 0 + 0.00001 * rand() / (RAND_MAX + 1);
-        meas.wy = 0 + 0.00001 * rand() / (RAND_MAX + 1);
-        meas.wz = 0 + 0.00001 * rand() / (RAND_MAX + 1);
-        meas.ofx = 0 + 0.99 * rand() / (RAND_MAX + 1);
-        meas.ofy = 0 + 0.99 * rand() / (RAND_MAX + 1);
-        meas.range = 1 + 0.00001 * rand() / (RAND_MAX + 1);*/
-        print_measurements(meas);
+    mediciones_t meas = {0.01, 0, 0, -9.81, 0, 0, 0, 0, 0, 1}; //dt, ax, ay, az, wx, wy, wz, ofx, ofy, range
+    for (int i = 0; i < 1; i++){
+        /* RUIDOS */ 
+        meas.ax = 0 + 0.0001 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.ay = 0 + 0.0001 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.az = -9.81 + 0.0001 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.wx = 0 + 0.00001 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.wy = 0 + 0.00001 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.wz = 0 + 0.00001 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.ofx = -1 + 0.5 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.ofy =  -1 + 0.5 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.range = 1 + 0.001 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        filtro.beta = 1;
+        filtro.gamma = 1;
+        //print_measurements(meas);
         prediction_step(&filtro, meas);
         //print_states(filtro);
-        print_trace_cov(&filtro);
+        //print_trace_cov(&filtro);
         correction_step(&filtro, &meas);
-        print_states(filtro);
+        //print_states(filtro);
         //print_expected_measurements(filtro);
-        print_trace_cov(&filtro);
+        //print_trace_cov(&filtro);
         //printf("----------------------------------------\n");
     }
+
     //print_states(filtro);
     /*int size = 2;
     double matrix[size][size];

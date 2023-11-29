@@ -21,7 +21,7 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     filtro->N =  N_STATES; // Cantidad de estados
     filtro->beta = 0; // Indica si hay una lectura nueva del OFS
     filtro->gamma = 0; // Indica si hay una lectura nueva del sensor de distancia
-    double temp[3] = {0, 0, 9.81};
+    double temp[3] = {0, 0, -g};
     filtro->qg = vec2quat(temp);
     filtro->M00 = N_OBS_00; // Cantidad de observaciones con beta=gamma=0
     filtro->M01 = N_OBS_01; // Cantidad de observaciones con beta=0, gamma=1
@@ -47,9 +47,9 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     filtro->Q[0][0] = 0.001; //uax
     filtro->Q[1][1] = 0.001; //uay
     filtro->Q[2][2] = 0.001; //uaz
-    filtro->Q[3][3] = 0.006; //uwx
-    filtro->Q[4][4] = 0.006; //uwy
-    filtro->Q[5][5] = 0.006; //uwz
+    filtro->Q[3][3] = 0.0006; //uwx
+    filtro->Q[4][4] = 0.0006; //uwy
+    filtro->Q[5][5] = 0.0006; //uwz
     filtro->Q[6][6] = 0.0001; //ubsz
     filtro->R[0][0] = U_A; //uax
     filtro->R[1][1] = U_A; //uay
@@ -200,11 +200,10 @@ if(filtro->beta == 1){
     filtro->aux = vec2quat(filtro->states + 3); //Paso la velocidad respecto al mundo a quat para convertirlo a body
     filtro->aux = quat_mult(filtro->aux, filtro->q); // aux = v * q
     filtro->aux = quat_mult(quat_conjugate(filtro->q), filtro->aux); // aux = q- * v * q
-
-    filtro->exp_meas[N_OBS_00 + 0] = -(*z).dt * filtro->f * ((2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
-                                         filtro->states[2] * filtro->aux.q2 + (*z).wy);
-    filtro->exp_meas[N_OBS_00 + 1] = -(*z).dt * filtro->f * ((2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
-                                         filtro->states[2] * filtro->aux.q3 - (*z).wx);  
+    filtro->exp_meas[N_OBS_00 + 0] = -(*z).dt * filtro->f * (filtro->aux.q2 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
+                                         filtro->p[2]  + (*z).wy);
+    filtro->exp_meas[N_OBS_00 + 1] = -(*z).dt * filtro->f * (filtro->aux.q3 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
+                                         filtro->p[2]  - (*z).wx);  
     filtro->R[N_OBS_00][N_OBS_00] = U_FLOW; //u flowx    
     filtro->R[N_OBS_00 + 1][N_OBS_00 + 1] = U_FLOW; //u flowy  
     filtro->meas[N_OBS_00 + 0] = z->ofx;
@@ -212,12 +211,12 @@ if(filtro->beta == 1){
 }
 // Sensor de distancia (Si corresponde)
 if(filtro->beta == 1 && filtro->gamma == 1){
-    filtro->exp_meas[N_OBS_11 - 1] = filtro->states[2] / (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1);
+    filtro->exp_meas[N_OBS_11 - 1] = filtro->p[2] / (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1);
     filtro->R[N_OBS_11 - 1][N_OBS_11 - 1] = U_RANGE; // distance
     filtro->meas[N_OBS_11 - 1] = z->range; 
 }
 else if(filtro->beta == 0 && filtro->gamma == 1){
-    filtro->exp_meas[N_OBS_10 - 1] = filtro->states[2] / (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1);
+    filtro->exp_meas[N_OBS_10 - 1] = filtro->p[2] / (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1);
     filtro->R[N_OBS_10 - 1][N_OBS_10 - 1] = U_RANGE; // distance  
     filtro->meas[N_OBS_10 - 1] = z->range;
 }
@@ -234,8 +233,8 @@ mulmat(*filtro->aux9, *filtro->aux11, *filtro->G, N_STATES, filtro->meas_counter
 sub(filtro->meas, filtro->exp_meas, filtro->aux12, filtro->meas_counter); // aux12 = z_medido - z_esperado
 mulvec(*filtro->G, filtro->aux12, filtro->aux8, N_STATES, filtro->meas_counter); // aux8 = G(z_medido - z_esperado)
 //print_vector("Mediciones", filtro->meas_counter, filtro->meas);
-print_vector("Mediciones esperadas", filtro->meas_counter, filtro->exp_meas);
-print_vector("Innovacion", filtro->meas_counter, filtro->aux8);
+//print_vector("Mediciones esperadas", filtro->meas_counter, filtro->exp_meas);
+//print_vector("Innovacion", filtro->meas_counter, filtro->aux8);
 accum(filtro->states, filtro->aux8, N_STATES, 1); // estado = estado + G(z_medido - z_esperado)
 filtro->q.q1 = filtro->states[N_P + N_V + 0];
 filtro->q.q2 = filtro->states[N_P + N_V + 1];
@@ -258,20 +257,20 @@ accum(*filtro->cov, *filtro->aux7, N_STATES, N_STATES); // cov = cov_priori - G 
 void IMU_states(ofs_ekf_t* filtro, int8_t offset){
 
 // partial_ax / partial_q
-filtro->H[offset + 0][N_P + N_V + 0] = -2 * g * (filtro->q.q3);     
-filtro->H[offset + 0][N_P + N_V + 1] = 2 * g * (filtro->q.q4);     
-filtro->H[offset + 0][N_P + N_V + 2] = -2 * g * (filtro->q.q1);     
-filtro->H[offset + 0][N_P + N_V + 3] = 2 * g * (filtro->q.q2);  
+filtro->H[offset + 0][N_P + N_V + 0] = -2 * (-g) * (filtro->q.q3);     
+filtro->H[offset + 0][N_P + N_V + 1] = 2 * (-g) * (filtro->q.q4);     
+filtro->H[offset + 0][N_P + N_V + 2] = -2 * (-g) * (filtro->q.q1);     
+filtro->H[offset + 0][N_P + N_V + 3] = 2 * (-g) * (filtro->q.q2);  
 // partial_ay / partial_q   
-filtro->H[offset + 1][N_P + N_V + 0] = 2 * g * (filtro->q.q2);      
-filtro->H[offset + 1][N_P + N_V + 1] = 2 * g * (filtro->q.q1);      
-filtro->H[offset + 1][N_P + N_V + 2] = 2 * g * (filtro->q.q4);     
-filtro->H[offset + 1][N_P + N_V + 3] = 2 * g * (filtro->q.q3);
+filtro->H[offset + 1][N_P + N_V + 0] = 2 * (-g) * (filtro->q.q2);      
+filtro->H[offset + 1][N_P + N_V + 1] = 2 * (-g) * (filtro->q.q1);      
+filtro->H[offset + 1][N_P + N_V + 2] = 2 * (-g) * (filtro->q.q4);     
+filtro->H[offset + 1][N_P + N_V + 3] = 2 * (-g) * (filtro->q.q3);
 // partial_az / partial_q  
-filtro->H[offset + 2][N_P + N_V + 0] = 2 * g * (filtro->q.q1);      
-filtro->H[offset + 2][N_P + N_V + 1] = -2 * g * (filtro->q.q2);      
-filtro->H[offset + 2][N_P + N_V + 2] = -2 * g * (filtro->q.q3);     
-filtro->H[offset + 2][N_P + N_V + 3] = 2 * g * (filtro->q.q4);
+filtro->H[offset + 2][N_P + N_V + 0] = 2 * (-g) * (filtro->q.q1);      
+filtro->H[offset + 2][N_P + N_V + 1] = -2 * (-g) * (filtro->q.q2);      
+filtro->H[offset + 2][N_P + N_V + 2] = -2 * (-g) * (filtro->q.q3);     
+filtro->H[offset + 2][N_P + N_V + 3] = 2 * (-g) * (filtro->q.q4);
 }
 
 void OFS_states(ofs_ekf_t* filtro, int8_t offset, mediciones_t *z){
@@ -293,22 +292,22 @@ filtro->H[offset][N_P + 1] = - ((*z).dt * filtro->f * (2 *filtro->q.q1 *filtro->
 filtro->H[offset][N_P + 2] = - ((*z).dt * filtro->f * (-2 *filtro->q.q1 *filtro->q.q3 + 2 *filtro->q.q2 *filtro->q.q4)) * \
                          (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) / filtro->p[2];      
 // partial_nx / partial_q  
-filtro->H[offset][N_P + N_V + 0] = - 2 * (*z).dt * filtro->f * (2 *filtro->q.q1 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[0] -\
+filtro->H[offset][N_P + N_V + 0] = (*z).dt * filtro->f * (-4 *filtro->q.q1 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[0] -\
                         filtro->q.q3 * filtro->v[2] +filtro->q.q4 * filtro->v[1]) \
                         +filtro->q.q2 * (filtro->q.q2 * filtro->v[0] +filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2])\
                         -filtro->q.q3 * (filtro->q.q1 * filtro->v[2] -filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) \
                         +filtro->q.q4 * (filtro->q.q1 * filtro->v[1] +filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0])) \
-                        + (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
+                        -2* (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                         * (filtro->q.q1 * filtro->v[0] -filtro->q.q3 * filtro->v[2] +filtro->q.q4 * filtro->v[1])) / filtro->p[2];    
 filtro->H[offset][N_P + N_V + 1] = - 2 * (*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                          * (filtro->q.q2 * filtro->v[0] +filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2]) / filtro->p[2];    
 filtro->H[offset][N_P + N_V + 2] = 2 * (*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                          * (filtro->q.q1 * filtro->v[2] -filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) / filtro->p[2];   
-filtro->H[offset][N_P + N_V + 3] = - 2 * (*z).dt * filtro->f * (2 *filtro->q.q4 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[0] \
+filtro->H[offset][N_P + N_V + 3] = (*z).dt * filtro->f * (-4 *filtro->q.q4 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[0] \
                         - filtro->q.q3 * filtro->v[2] +filtro->q.q4 * filtro->v[1]) +filtro->q.q2 * (filtro->q.q2 * filtro->v[0] +\
                         filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2]) -filtro->q.q3 * (filtro->q.q1 * filtro->v[2] \
                         - filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) +filtro->q.q4 * (filtro->q.q1 * filtro->v[1] \
-                        + filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0])) + (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
+                        + filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0])) -2* (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                         * (filtro->q.q1 * filtro->v[1] +filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0])) / filtro->p[2];  
 // partial_ny / partial_pz
 filtro->H[offset + 1][2] = ((*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1)) * \
