@@ -30,6 +30,7 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     mat_zeros(filtro->states, N_STATES, 1); //p, v, q
     filtro->states[N_P + N_V] = 1; //q1 = 1;
     mat_zeros(*filtro->cov, N_STATES, N_STATES); // Matriz de covarianza de estados
+    matmul_scalar(*filtro->cov, N_STATES, N_STATES, 0.1);
     mat_addeye(*filtro->cov, N_STATES);
     mat_zeros(*filtro->F, N_STATES, N_STATES);
     mat_addeye(*filtro->F, N_STATES);
@@ -43,13 +44,13 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     filtro->W[N_P+2][2] = 1;
     mat_zeros(*filtro->Q, N_PROC_NOISE, N_PROC_NOISE);
     mat_zeros(*filtro->R, N_CORR_NOISE, N_CORR_NOISE);
-    filtro->Q[0][0] = 0.01; //uax
-    filtro->Q[1][1] = 0.01; //uay
-    filtro->Q[2][2] = 0.01; //uaz
-    filtro->Q[3][3] = 0.001; //uwx
-    filtro->Q[4][4] = 0.001; //uwy
-    filtro->Q[5][5] = 0.001; //uwz
-    filtro->Q[6][6] = 0.01; //ubsz
+    filtro->Q[0][0] = 0.001; //uax
+    filtro->Q[1][1] = 0.001; //uay
+    filtro->Q[2][2] = 0.001; //uaz
+    filtro->Q[3][3] = 0.006; //uwx
+    filtro->Q[4][4] = 0.006; //uwy
+    filtro->Q[5][5] = 0.006; //uwz
+    filtro->Q[6][6] = 0.0001; //ubsz
     filtro->R[0][0] = U_A; //uax
     filtro->R[1][1] = U_A; //uay
     filtro->R[2][2] = U_A; //uaz
@@ -233,10 +234,18 @@ mulmat(*filtro->aux9, *filtro->aux11, *filtro->G, N_STATES, filtro->meas_counter
 sub(filtro->meas, filtro->exp_meas, filtro->aux12, filtro->meas_counter); // aux12 = z_medido - z_esperado
 mulvec(*filtro->G, filtro->aux12, filtro->aux8, N_STATES, filtro->meas_counter); // aux8 = G(z_medido - z_esperado)
 //print_vector("Mediciones", filtro->meas_counter, filtro->meas);
-//print_vector("Mediciones esperadas", filtro->meas_counter, filtro->exp_meas);
-//print_vector("Innovacion", filtro->meas_counter, filtro->aux8);
+print_vector("Mediciones esperadas", filtro->meas_counter, filtro->exp_meas);
+print_vector("Innovacion", filtro->meas_counter, filtro->aux8);
 accum(filtro->states, filtro->aux8, N_STATES, 1); // estado = estado + G(z_medido - z_esperado)
-
+filtro->q.q1 = filtro->states[N_P + N_V + 0];
+filtro->q.q2 = filtro->states[N_P + N_V + 1];
+filtro->q.q3 = filtro->states[N_P + N_V + 2];
+filtro->q.q4 = filtro->states[N_P + N_V + 3];
+quat_Normalization(&filtro->q);
+filtro->states[N_P + N_V] = filtro->q.q1;
+filtro->states[N_P + N_V + 1] = filtro->q.q2;
+filtro->states[N_P + N_V + 2] = filtro->q.q3;
+filtro->states[N_P + N_V + 3] = filtro->q.q4;
 /*************************** Covarianza **************************/
 mulmat(*filtro->G, *filtro->H, *filtro->aux9, N_STATES, filtro->meas_counter, N_STATES); //  aux9 = G * H
 mulmat(*filtro->aux9, *filtro->cov, *filtro->aux7, N_STATES, N_STATES, N_STATES); // aux7 = G * H * cov_priori

@@ -24,9 +24,9 @@
 #define N_STATES 10 //N_P+N_V+N_Q -> La cantidad de estados total es la suma de sus componentes
 #define N_PROC_NOISE 7 // a, w, z
 #define N_CORR_NOISE 9 // a, w, flow_x, flow_y, z
-#define U_A 0.01 // Ruido medicion acelerometro
-#define U_FLOW 2 // Ruido medicion flujo optico
-#define U_RANGE 0.01 // Ruido medicion distancia
+#define U_A 0.05 // Ruido medicion acelerometro
+#define U_FLOW 1 // Ruido medicion flujo optico
+#define U_RANGE 0.001 // Ruido medicion distancia
 #define N_IMU 3 // Para el paso de correccion, en realidad son 6 mediciones
 #define N_OFS 2
 #define N_TOFS 1
@@ -119,7 +119,7 @@ typedef struct ofs_ekf {
 * Pos: El jacobiano tiene calculada la parte del sensor de flujo optico posicionada en las filas segun el offset. */
   void OFS_states(ofs_ekf_t* filtro, int8_t offset, mediciones_t *z);
 
-  /* Calcula el jacobiano del modelo del sensor de diistancia respecto al estado
+  /* Calcula el jacobiano del modelo del sensor de distancia respecto al estado
 * Pre: El filtro debe estar inicializado y haber llamado anteriormente a 'prediction_step'.
 * Pos: El jacobiano tiene calculada la parte del sensor de diistancia posicionada en las filas segun el offset. */
   void TOFS_states(ofs_ekf_t* filtro, int8_t offset);

@@ -16,6 +16,20 @@ void print_expected_measurements(ofs_ekf_t filtro){
     }
     printf("\n");
 }
+void print_measurements(mediciones_t meas){
+    printf("Mediciones\n");
+    printf("ax: %f ", meas.ax);
+    printf("ay: %f ", meas.ay);
+    printf("az: %f ", meas.az);
+    printf("wx: %f ", meas.wx);
+    printf("wy: %f ", meas.wy);
+    printf("wz: %f ", meas.wz);
+    printf("ofx: %f ", meas.ofx);
+    printf("ofy: %f ", meas.ofy);
+    printf("z: %f ", meas.range);
+
+    printf("\n");
+}
 
 void print_states(ofs_ekf_t filtro) {
     float roll = 0.0, pitch = 0.0, yaw = 0.0;
@@ -79,34 +93,36 @@ int main() {
     filtro.states[5] = 0;
     //print_states(filtro);
     srand(time(NULL));
-    mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0.1, 0, 0, 1};
+    filtro.beta = 1;
+    filtro.gamma = 1;
+    mediciones_t meas = {0.1, 0, 0, 9.81, 0, 0, 0, 0, 0, 1};
     //for (int i = 0; i < 2; i++) {
     //    prediction_step(&filtro, meas);
     //    print_states(filtro);
         // print_cov(&filtro);
     //}
-    for (int i = 0; i < 10; i++){
-        filtro.beta = 1;
-        filtro.gamma = 1;
-        meas.ax = 0 + U_A * rand() / (RAND_MAX + 1);
-        meas.ay = 0 + U_A * rand() / (RAND_MAX + 1);
-        meas.az = 9.81 + U_A * rand() / (RAND_MAX + 1);
-        meas.wx = 0 + 0.1 * rand() / (RAND_MAX + 1);
-        meas.wy = 0 + 0.1 * rand() / (RAND_MAX + 1);
-        meas.wz = 0.1 + 0.1 * rand() / (RAND_MAX + 1);
-        meas.ofx = 0 + 0.1 * rand() / (RAND_MAX + 1);
-        meas.ofy = 0 + 0.1 * rand() / (RAND_MAX + 1);
-        meas.range = 1 + 0.1 * rand() / (RAND_MAX + 1);
+    for (int i = 0; i < 1000; i++){
+        /*
+        meas.ax = 0 + 0.0001 * rand() / (RAND_MAX + 1);
+        meas.ay = 0 + 0.0001 * rand() / (RAND_MAX + 1);
+        meas.az = -9.81 + 0.0001 * rand() / (RAND_MAX + 1);
+        meas.wx = 0 + 0.00001 * rand() / (RAND_MAX + 1);
+        meas.wy = 0 + 0.00001 * rand() / (RAND_MAX + 1);
+        meas.wz = 0 + 0.00001 * rand() / (RAND_MAX + 1);
+        meas.ofx = 0 + 0.99 * rand() / (RAND_MAX + 1);
+        meas.ofy = 0 + 0.99 * rand() / (RAND_MAX + 1);
+        meas.range = 1 + 0.00001 * rand() / (RAND_MAX + 1);*/
+        print_measurements(meas);
         prediction_step(&filtro, meas);
         //print_states(filtro);
-        //print_trace_cov(&filtro);
+        print_trace_cov(&filtro);
         correction_step(&filtro, &meas);
-        //print_states(filtro);
+        print_states(filtro);
         //print_expected_measurements(filtro);
-        //print_trace_cov(&filtro);
-        printf("----------------------------------------\n");
+        print_trace_cov(&filtro);
+        //printf("----------------------------------------\n");
     }
-    print_states(filtro);
+    //print_states(filtro);
     /*int size = 2;
     double matrix[size][size];
     double inv[size][size];
