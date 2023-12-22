@@ -42,15 +42,23 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     filtro->W[N_P+1][1] = 1;
     // d(velocidad) / d(uaz)
     filtro->W[N_P+2][2] = 1;
+    // d(q1) / d(uw)
+    filtro->W[N_P+N_V][3] = 1;
+    // d(q2) / d(uw)
+    filtro->W[N_P+N_V+1][4] = 1;
+    // d(q3) / d(uw)
+    filtro->W[N_P+N_V+2][5] = 1;
+    // d(q4) / d(uw)
+    filtro->W[N_P+N_V+3][6] = 1;
     mat_zeros(*filtro->Q, N_PROC_NOISE, N_PROC_NOISE);
     mat_zeros(*filtro->R, N_CORR_NOISE, N_CORR_NOISE);
     filtro->Q[0][0] = 0.001; //uax
     filtro->Q[1][1] = 0.001; //uay
     filtro->Q[2][2] = 0.001; //uaz
-    filtro->Q[3][3] = 0.0006; //uwx
-    filtro->Q[4][4] = 0.0006; //uwy
-    filtro->Q[5][5] = 0.0006; //uwz
-    filtro->Q[6][6] = 0.0001; //ubsz
+    filtro->Q[3][3] = 0.00001; //uwx
+    filtro->Q[4][4] = 0.00001; //uwy
+    filtro->Q[5][5] = 0.00001; //uwz
+    filtro->Q[6][6] = 0.00001; //ubsz
     filtro->R[0][0] = U_A; //uax
     filtro->R[1][1] = U_A; //uay
     filtro->R[2][2] = U_A; //uaz
@@ -200,9 +208,9 @@ if(filtro->beta == 1){
     filtro->aux = vec2quat(filtro->states + 3); //Paso la velocidad respecto al mundo a quat para convertirlo a body
     filtro->aux = quat_mult(filtro->aux, filtro->q); // aux = v * q
     filtro->aux = quat_mult(quat_conjugate(filtro->q), filtro->aux); // aux = q- * v * q
-    filtro->exp_meas[N_OBS_00 + 0] = -(*z).dt * filtro->f * (filtro->aux.q2 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
+    filtro->exp_meas[N_OBS_00 + 0] = -(*z).tau * filtro->f * (filtro->aux.q2 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
                                          filtro->p[2]  + (*z).wy);
-    filtro->exp_meas[N_OBS_00 + 1] = -(*z).dt * filtro->f * (filtro->aux.q3 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
+    filtro->exp_meas[N_OBS_00 + 1] = -(*z).tau* filtro->f * (filtro->aux.q3 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
                                          filtro->p[2]  - (*z).wx);  
     filtro->R[N_OBS_00][N_OBS_00] = U_FLOW; //u flowx    
     filtro->R[N_OBS_00 + 1][N_OBS_00 + 1] = U_FLOW; //u flowy  
@@ -276,7 +284,7 @@ filtro->H[offset + 2][N_P + N_V + 3] = 2 * (-g) * (filtro->q.q4);
 void OFS_states(ofs_ekf_t* filtro, int8_t offset, mediciones_t *z){
 
 // partial_nx / partial_pz
-filtro->H[offset][2] = ((*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1)) * \
+filtro->H[offset][2] = ((*z).tau * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1)) * \
                         (filtro->q.q1 * (filtro->q.q1 * filtro->v[0] - filtro->q.q3 * filtro->v[2] + \
                         filtro->q.q4 * filtro->v[1]) - filtro->q.q2 * (-filtro->q.q2 * filtro->v[0] - \
                         filtro->q.q3 * filtro->v[1] - filtro->q.q4 * filtro->v[2]) \
@@ -285,57 +293,57 @@ filtro->H[offset][2] = ((*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * po
                         filtro->q.q2 * filtro->v[2] - filtro->q.q4 * filtro->v[0]) \
                         / pow(filtro->p[2], 2));     
 // partial_nx / partial_v   
-filtro->H[offset][N_P + 0] = - ((*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1)) * \
+filtro->H[offset][N_P + 0] = - ((*z).tau * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1)) * \
                          (pow(filtro->q.q1, 2) + pow(filtro->q.q2, 2) - pow(filtro->q.q3, 2) - pow(filtro->q.q4, 2)) / filtro->p[2];       
-filtro->H[offset][N_P + 1] = - ((*z).dt * filtro->f * (2 *filtro->q.q1 *filtro->q.q4 + 2 *filtro->q.q2 *filtro->q.q3)) * \
+filtro->H[offset][N_P + 1] = - ((*z).tau * filtro->f * (2 *filtro->q.q1 *filtro->q.q4 + 2 *filtro->q.q2 *filtro->q.q3)) * \
                          (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) / filtro->p[2];        
-filtro->H[offset][N_P + 2] = - ((*z).dt * filtro->f * (-2 *filtro->q.q1 *filtro->q.q3 + 2 *filtro->q.q2 *filtro->q.q4)) * \
+filtro->H[offset][N_P + 2] = - ((*z).tau * filtro->f * (-2 *filtro->q.q1 *filtro->q.q3 + 2 *filtro->q.q2 *filtro->q.q4)) * \
                          (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) / filtro->p[2];      
 // partial_nx / partial_q  
-filtro->H[offset][N_P + N_V + 0] = (*z).dt * filtro->f * (-4 *filtro->q.q1 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[0] -\
+filtro->H[offset][N_P + N_V + 0] = (*z).tau * filtro->f * (-4 *filtro->q.q1 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[0] -\
                         filtro->q.q3 * filtro->v[2] +filtro->q.q4 * filtro->v[1]) \
                         +filtro->q.q2 * (filtro->q.q2 * filtro->v[0] +filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2])\
                         -filtro->q.q3 * (filtro->q.q1 * filtro->v[2] -filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) \
                         +filtro->q.q4 * (filtro->q.q1 * filtro->v[1] +filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0])) \
                         -2* (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                         * (filtro->q.q1 * filtro->v[0] -filtro->q.q3 * filtro->v[2] +filtro->q.q4 * filtro->v[1])) / filtro->p[2];    
-filtro->H[offset][N_P + N_V + 1] = - 2 * (*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
+filtro->H[offset][N_P + N_V + 1] = - 2 * (*z).tau * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                          * (filtro->q.q2 * filtro->v[0] +filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2]) / filtro->p[2];    
-filtro->H[offset][N_P + N_V + 2] = 2 * (*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
+filtro->H[offset][N_P + N_V + 2] = 2 * (*z).tau * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                          * (filtro->q.q1 * filtro->v[2] -filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) / filtro->p[2];   
-filtro->H[offset][N_P + N_V + 3] = (*z).dt * filtro->f * (-4 *filtro->q.q4 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[0] \
+filtro->H[offset][N_P + N_V + 3] = (*z).tau * filtro->f * (-4 *filtro->q.q4 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[0] \
                         - filtro->q.q3 * filtro->v[2] +filtro->q.q4 * filtro->v[1]) +filtro->q.q2 * (filtro->q.q2 * filtro->v[0] +\
                         filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2]) -filtro->q.q3 * (filtro->q.q1 * filtro->v[2] \
                         - filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) +filtro->q.q4 * (filtro->q.q1 * filtro->v[1] \
                         + filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0])) -2* (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                         * (filtro->q.q1 * filtro->v[1] +filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0])) / filtro->p[2];  
 // partial_ny / partial_pz
-filtro->H[offset + 1][2] = ((*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1)) * \
+filtro->H[offset + 1][2] = ((*z).tau * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1)) * \
                         (filtro->q.q1 * (filtro->q.q1 * filtro->v[1] +filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0]) \
                         +filtro->q.q2 * (filtro->q.q1 * filtro->v[2] -filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) \
                         + filtro->q.q3 * (filtro->q.q2 * filtro->v[0] +filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2]) \
                         -filtro->q.q4 * (filtro->q.q1 * filtro->v[0] -filtro->q.q3 * filtro->v[2] +filtro->q.q4 * filtro->v[1]) \
                         / pow(filtro->p[2], 2));    
 // partial_ny / partial_v   
-filtro->H[offset + 1][N_P + 0] = ((*z).dt * filtro->f * (2 *filtro->q.q1 *filtro->q.q4 - 2 *filtro->q.q2 *filtro->q.q3)) * \
+filtro->H[offset + 1][N_P + 0] = ((*z).tau * filtro->f * (2 *filtro->q.q1 *filtro->q.q4 - 2 *filtro->q.q2 *filtro->q.q3)) * \
                          (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) / filtro->p[2];           
-filtro->H[offset + 1][N_P + 1] = - ((*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1)) * \
+filtro->H[offset + 1][N_P + 1] = - ((*z).tau * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1)) * \
                          (pow(filtro->q.q1, 2) - pow(filtro->q.q2, 2) + pow(filtro->q.q3, 2) - pow(filtro->q.q4, 2)) / filtro->p[2];       
-filtro->H[offset + 1][N_P + 2] = - ((*z).dt * filtro->f * (2 *filtro->q.q1 *filtro->q.q2 + 2 *filtro->q.q3 *filtro->q.q4)) * \
+filtro->H[offset + 1][N_P + 2] = - ((*z).tau * filtro->f * (2 *filtro->q.q1 *filtro->q.q2 + 2 *filtro->q.q3 *filtro->q.q4)) * \
                          (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) / filtro->p[2];   
 // partial_ny / partial_q  
-filtro->H[offset + 1][N_P + N_V + 0] = - 2 * (*z).dt * filtro->f * (2 *filtro->q.q1 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[1] \
+filtro->H[offset + 1][N_P + N_V + 0] = - 2 * (*z).tau * filtro->f * (2 *filtro->q.q1 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[1] \
                            +filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0]) \
                          +filtro->q.q2 * (filtro->q.q1 * filtro->v[2] -filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) \
                          +filtro->q.q3 * (filtro->q.q2 * filtro->v[0] +filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2]) \
                          -filtro->q.q4 * (filtro->q.q1 * filtro->v[0] -filtro->q.q3 * filtro->v[2] +filtro->q.q4 * filtro->v[1])) \
                          + (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                          * (filtro->q.q1 * filtro->v[1] +filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0])) / filtro->p[2];     
-filtro->H[offset + 1][N_P + N_V + 1] = - 2 * (*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
+filtro->H[offset + 1][N_P + N_V + 1] = - 2 * (*z).tau * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                          * (filtro->q.q1 * filtro->v[2] -filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) / filtro->p[2]; 
-filtro->H[offset + 1][N_P + N_V + 2] = - 2 * (*z).dt * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
+filtro->H[offset + 1][N_P + N_V + 2] = - 2 * (*z).tau * filtro->f * (2 * pow(filtro->q.q1, 2) + 2 * pow(filtro->q.q4, 2) - 1) \
                          * (filtro->q.q2 * filtro->v[0] +filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2]) / filtro->p[2]; 
-filtro->H[offset + 1][N_P + N_V + 3] = - 2 * (*z).dt * filtro->f * (2 *filtro->q.q4 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[1] \
+filtro->H[offset + 1][N_P + N_V + 3] = - 2 * (*z).tau * filtro->f * (2 *filtro->q.q4 * (filtro->q.q1 * (filtro->q.q1 * filtro->v[1] \
                             +filtro->q.q2 * filtro->v[2] -filtro->q.q4 * filtro->v[0]) \
                          +filtro->q.q2 * (filtro->q.q1 * filtro->v[2] -filtro->q.q2 * filtro->v[1] +filtro->q.q3 * filtro->v[0]) \
                          +filtro->q.q3 * (filtro->q.q2 * filtro->v[0] +filtro->q.q3 * filtro->v[1] +filtro->q.q4 * filtro->v[2]) \

@@ -34,6 +34,7 @@
 
 typedef struct mediciones{
   double dt;
+  double tau;
   double ax;
   double ay;
   double az;
