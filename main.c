@@ -96,18 +96,18 @@ int main() {
     filtro.beta = 1;
     filtro.gamma = 1;
     mediciones_t meas = {0.01, 0.01, 0, 0, -9.81, 0, 0, 0.1, 0, 0, 1}; //dt, tau, ax, ay, az, wx, wy, wz, ofx, ofy, range
-    for (int i = 0; i < 1; i++){
+    for (int i = 0; i < 10; i++){
         /* RUIDOS */ 
         meas.ax = 0 + 0.0001 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.ay = 0 + 0.0001 * (2.0 * rand() / (RAND_MAX) - 1.0);
-        meas.az = -9.81 + 0.0001 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.az = 0 + 0.0001 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.wx = 0 + 0.00001 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.wy = 0 + 0.00001 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.wz = 0.1 + 0.00001 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.ofx = 0 + 0.5 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.ofy =  0 + 0.5 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.range = 1 + 0.001 * (2.0 * rand() / (RAND_MAX) - 1.0);
-        filtro.beta = 1;
+        filtro.beta = 0;
         filtro.gamma = 1;
         //print_measurements(meas);
         prediction_step(&filtro, meas);

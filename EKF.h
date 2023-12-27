@@ -22,8 +22,8 @@
 #define N_V 3
 #define N_Q 4
 #define N_STATES 10 //N_P+N_V+N_Q -> La cantidad de estados total es la suma de sus componentes
-#define N_PROC_NOISE 7 // a, w, z
-#define N_CORR_NOISE 9 // a, w, flow_x, flow_y, z
+#define N_PROC_NOISE 7 // a, w
+#define N_CORR_NOISE 6 // a, flow_x, flow_y, z
 #define U_A 0.005 // Ruido medicion acelerometro
 #define U_FLOW 2 // Ruido medicion flujo optico
 #define U_RANGE 0.001 // Ruido medicion distancia
@@ -31,6 +31,8 @@
 #define N_OFS 2
 #define N_TOFS 1
 #define g 9.81
+#define MIN_HEIGHT 0.04
+#define MAX_HEIGHT 6
 
 typedef struct mediciones{
   double dt;
@@ -63,7 +65,7 @@ typedef struct ofs_ekf {
     double cov[N_STATES][N_STATES]; // Matriz de covarianza de estados
     double F[N_STATES][N_STATES]; // Derivada de vector de estados respecto de si mismo
     double W[N_STATES][N_PROC_NOISE]; // Derivada de vector de estados respecto de ruidos
-    double H[N_CORR_NOISE][N_STATES]; // Derivada de modelo de medicion respecto a los estados
+    double H[N_OBS_11][N_STATES]; // Derivada de modelo de medicion respecto a los estados
     double G[N_STATES][N_OBS_11]; // Ganancia de Kalman
     double Q[N_PROC_NOISE][N_PROC_NOISE]; // Matriz ruidos proceso
     double R[N_OBS_11][N_OBS_11]; // Matriz ruidos mediciones
@@ -79,7 +81,7 @@ typedef struct ofs_ekf {
     quaternion_t aux;
     double aux2[N_V];
     double aux3[N_V];
-    double aux4[N_STATES][N_STATES];
+    double aux4[N_PROC_NOISE][N_STATES];
     double aux5[N_STATES][N_STATES];
     double aux6[N_STATES][N_STATES];
     double aux7[N_STATES][N_STATES];
@@ -125,4 +127,8 @@ typedef struct ofs_ekf {
 * Pos: El jacobiano tiene calculada la parte del sensor de diistancia posicionada en las filas segun el offset. */
   void TOFS_states(ofs_ekf_t* filtro, int8_t offset);
 
+/* Calcula la traza de la covarianza
+* Pre: El filtro debe estar inicializado.
+* Pos: Devuelve la traza de la matriz de covarianza. */
+  double calc_trace_cov(ofs_ekf_t *filtro);
 #endif /* EKF_H_ */

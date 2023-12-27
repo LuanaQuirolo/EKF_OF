@@ -23,14 +23,10 @@ void ofs_ekf_init(ofs_ekf_t* filtro){
     filtro->gamma = 0; // Indica si hay una lectura nueva del sensor de distancia
     double temp[3] = {0, 0, -g};
     filtro->qg = vec2quat(temp);
-    filtro->M00 = N_OBS_00; // Cantidad de observaciones con beta=gamma=0
-    filtro->M01 = N_OBS_01; // Cantidad de observaciones con beta=0, gamma=1
-    filtro->M10 = N_OBS_10; // Cantidad de observaciones con beta=1, gamma=0
-    filtro->M11 = N_OBS_11; // Cantidad de observaciones con beta=1, gamma=1
     mat_zeros(filtro->states, N_STATES, 1); //p, v, q
     filtro->states[N_P + N_V] = 1; //q1 = 1;
     mat_zeros(*filtro->cov, N_STATES, N_STATES); // Matriz de covarianza de estados
-    matmul_scalar(*filtro->cov, N_STATES, N_STATES, 0.1);
+    matmul_scalar(*filtro->cov, N_STATES, N_STATES, 1);
     mat_addeye(*filtro->cov, N_STATES);
     mat_zeros(*filtro->F, N_STATES, N_STATES);
     mat_addeye(*filtro->F, N_STATES);
@@ -139,6 +135,12 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     // Posicion
     matmul_scalar2(filtro->v, filtro->aux2, N_V, 1, u.dt); // aux2 = Vk = dt * Vk
     add(filtro->p, filtro->aux2, filtro->states, N_P, 1); // Pk+1 = Pk + dt * Vk
+    if(filtro->states[2] < MIN_HEIGHT){
+    	filtro->states[2] = MIN_HEIGHT;
+    }
+    else if (filtro->states[2] > MAX_HEIGHT){
+    	filtro->states[2] = MAX_HEIGHT;
+    }
     // Velocidad
     // Queremos pasar la acel de cuerpo a mundo
     filtro->aux = quat_mult(filtro->qa_meas, quat_conjugate(filtro->q)); // aux = (filtro->qa_meas) * -q
@@ -210,7 +212,7 @@ if(filtro->beta == 1){
     filtro->aux = quat_mult(quat_conjugate(filtro->q), filtro->aux); // aux = q- * v * q
     filtro->exp_meas[N_OBS_00 + 0] = -(*z).tau * filtro->f * (filtro->aux.q2 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
                                          filtro->p[2]  + (*z).wy);
-    filtro->exp_meas[N_OBS_00 + 1] = -(*z).tau* filtro->f * (filtro->aux.q3 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
+    filtro->exp_meas[N_OBS_00 + 1] = -(*z).tau * filtro->f * (filtro->aux.q3 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
                                          filtro->p[2]  - (*z).wx);  
     filtro->R[N_OBS_00][N_OBS_00] = U_FLOW; //u flowx    
     filtro->R[N_OBS_00 + 1][N_OBS_00 + 1] = U_FLOW; //u flowy  
@@ -232,11 +234,15 @@ else if(filtro->beta == 0 && filtro->gamma == 1){
 
 transpose(*filtro->H, *filtro->Ht, filtro->meas_counter, N_STATES); 
 mulmat(*filtro->cov, *filtro->Ht, *filtro->aux9, N_STATES, N_STATES, filtro->meas_counter); // aux9 = cov * Ht
+print_gain("cov*H: ", N_STATES, filtro->meas_counter, *filtro->aux9);
 mulmat(*filtro->H, *filtro->aux9, *filtro->aux10, filtro->meas_counter, N_STATES, filtro->meas_counter); // aux10 = H * cov * Ht
+print_gain("H * cov * Ht: ", filtro->meas_counter, N_STATES,  *filtro->aux9);
 accum(*filtro->aux10, *filtro->R, filtro->meas_counter, filtro->meas_counter); // aux10 = H * cov * Ht + R
+print_gain("H * cov * Ht + R: ", filtro->meas_counter, N_STATES,  *filtro->aux9);
 cholsl(*filtro->aux10, *filtro->aux11, filtro->aux12, filtro->meas_counter); // aux11 = inv(H * cov * Ht + R)
+print_gain("inv(H * cov * Ht+R): ", filtro->meas_counter, filtro->meas_counter,  *filtro->aux11);
 mulmat(*filtro->aux9, *filtro->aux11, *filtro->G, N_STATES, filtro->meas_counter, filtro->meas_counter); // G = cov * Ht * inv(H * cov * Ht + R)
-
+print_gain("G: ", N_STATES, filtro->meas_counter,  *filtro->G);
 /*************************** Correccion **************************/
 sub(filtro->meas, filtro->exp_meas, filtro->aux12, filtro->meas_counter); // aux12 = z_medido - z_esperado
 mulvec(*filtro->G, filtro->aux12, filtro->aux8, N_STATES, filtro->meas_counter); // aux8 = G(z_medido - z_esperado)
@@ -258,6 +264,12 @@ mulmat(*filtro->G, *filtro->H, *filtro->aux9, N_STATES, filtro->meas_counter, N_
 mulmat(*filtro->aux9, *filtro->cov, *filtro->aux7, N_STATES, N_STATES, N_STATES); // aux7 = G * H * cov_priori
 mat_negate(*filtro->aux7, N_STATES, N_STATES); // aux7 = - G * H * cov_priori
 accum(*filtro->cov, *filtro->aux7, N_STATES, N_STATES); // cov = cov_priori - G * H * cov_priori
+if(filtro->states[2] < MIN_HEIGHT){
+	filtro->states[2] = MIN_HEIGHT;
+}
+else if (filtro->states[2] > MAX_HEIGHT){
+	filtro->states[2] = MAX_HEIGHT;
+}
 (*filtro).beta = 0;
 (*filtro).gamma = 0;
 }
@@ -359,4 +371,12 @@ filtro->H[offset + 0][2] = 1/(2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) 
 filtro->H[offset + 0][N_P + N_V] = -4 * filtro->p[2] * filtro->q.q1 * pow(filtro->H[offset + 0][2], 2);
 // partial_tofs / partial_q4
 filtro->H[offset + 0][N_P + N_V + 3] = -4 * filtro->p[2] * filtro->q.q4 * pow(filtro->H[offset + 0][2], 2);
+}
+
+double calc_trace_cov(ofs_ekf_t *filtro) {
+    double suma = 0;
+    for (int i = 0; i < N_STATES; i++) {
+        suma += filtro->cov[i][i];
+    }
+    return suma;
 }
