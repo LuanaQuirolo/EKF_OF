@@ -23,7 +23,7 @@
 #define U_P_A pow(0.1, 2) // Ruido proceso acelerometro
 #define U_P_W pow(0.001, 2) // Ruido proceso giroscopio
 #define U_A pow(0.1, 2) // Ruido medicion acelerometro
-#define U_FLOW pow(0.5, 2) // Ruido medicion flujo optico
+#define U_FLOW pow(0.2, 2) // Ruido medicion flujo optico
 #define U_RANGE pow(0.001, 2) // Ruido medicion distancia
 #define U_MAG pow(0.001, 2) // Ruido medicion magnetometro
 #define N_IMU 3 // Para el paso de correccion, en realidad son 6 mediciones
@@ -60,7 +60,7 @@ typedef struct ofs_ekf {
     double cov[N_STATES][N_STATES]; // Matriz de covarianza de estados
     double F[N_STATES][N_STATES]; // Derivada de vector de estados respecto de si mismo
     double H[N_OBS][N_STATES]; // Derivada de modelo de medicion respecto a los estados
-    double G[N_STATES][N_OBS]; // Ganancia de Kalman
+    double G[N_STATES][N_OBS]; // Ganancia de Kalman //TODO: Borrar
     double WQWt[N_STATES][N_STATES]; // Matriz W * Q * Wt
     double R[N_OBS][N_OBS]; // Matriz ruidos mediciones
     double m[N_MAG]; //Campo magnético inicial //TODO: Quizas este no es necesario
@@ -90,6 +90,11 @@ typedef struct ofs_ekf {
     quaternion_t prov2;
     /* Escalares temporales */
     double S;
+
+    double Ht[N_STATES][N_OBS];
+    double aux9[N_OBS][N_STATES];
+    double aux10[N_OBS][N_OBS];
+    double aux11[N_OBS][N_OBS];
 } ofs_ekf_t; 
 
   void ofs_ekf_init(ofs_ekf_t* filtro, double m[N_MAG]);

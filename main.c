@@ -95,7 +95,7 @@ int main() {
     //print_states(filtro);
     srand(time(NULL));
     mediciones_t meas = {0.01, 0, 0, -9.81, 0, 0, 0, -189/1090, 313/1090, 12/1090, 0, 0, 1}; //dt, tau, ax, ay, az, wx, wy, wz, ofx, ofy, range
-    for (int i = 0; i < 2; i++){
+    for (int i = 0; i < 10000; i++){
         /* RUIDOS */ 
         meas.ax = 0 + 0.08 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.ay = 0 + 0.08 * (2.0 * rand() / (RAND_MAX) - 1.0);
@@ -108,7 +108,7 @@ int main() {
         meas.wz = 0 + 0.001 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.ofx = 0 + 0.2 * (2.0 * rand() / (RAND_MAX) - 1.0);
         meas.ofy =  0 + 0.2 * (2.0 * rand() / (RAND_MAX) - 1.0);
-        meas.range = 0.8 + 0.004 * (2.0 * rand() / (RAND_MAX) - 1.0);
+        meas.range = 0.8 + 0.0001 * (2.0 * rand() / (RAND_MAX) - 1.0);
         //print_measurements(meas);
         prediction_step(&filtro, meas);
         //print_states(filtro);
@@ -119,8 +119,5 @@ int main() {
         print_trace_cov(&filtro);
         //printf("----------------------------------------\n");
     }
-    quaternion_t aux = {0.35, -0.019, 0.0009, 0.936};
-    float roll, pitch, yaw;
-    eulerAngles(aux, &roll, &pitch, &yaw);
     return 0;
 }

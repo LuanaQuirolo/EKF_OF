@@ -20,10 +20,10 @@ void print_gain(char* string, int m, int n, double vec[m][n]) {
 }
 void ofs_ekf_init(ofs_ekf_t* filtro, double m[N_MAG]){
     /* Inicializo el campo magnetico respecto a mundo */
-    filtro->qm.q1 = 0;
-    filtro->qm.q2 = m[0];
-    filtro->qm.q3 = m[1];
-    filtro->qm.q4 = m[2];
+    filtro->m[0] = m[0];
+    filtro->m[1] = m[1];
+    filtro->m[2] = m[2];
+    filtro->qm = vec2quat(filtro->m);
     /* Inicializo el valor de la gravedad respecto a mundo */
     filtro->qg.q1 = 0;
     filtro->qg.q2 = 0;
@@ -65,9 +65,9 @@ void ofs_ekf_init(ofs_ekf_t* filtro, double m[N_MAG]){
     Q[0][0] = U_P_A; //uax
     Q[1][1] = U_P_A; //uay
     Q[2][2] = U_P_A; //uaz
-    Q[3][3] = U_P_W; //uwx
-    Q[4][4] = U_P_W; //uwy
-    Q[5][5] = U_P_W; //uwz
+    Q[3][3] = U_P_W; //uw
+    Q[4][4] = U_P_W; //uw
+    Q[5][5] = U_P_W; //uw
     Q[6][6] = U_P_W; //uw
     /* Calculo W Q Wt dado que no varia segun la iteracion */
     mulmat(N_PROC_NOISE, N_PROC_NOISE, N_STATES, Q, Wt, filtro->aux); // aux4 = Q * Wt
@@ -86,7 +86,7 @@ void ofs_ekf_init(ofs_ekf_t* filtro, double m[N_MAG]){
     /* Limpio H */
     mat_zeros(N_OBS, N_STATES, filtro->H); // Jacobiano de mediciones respecto a estados
     /* Calculo factor de conversion del flujo optico */
-    filtro->f = 35 / (2 * atan2f(4.2 * M_PI / 180, 2));  // Factor de conversión
+    filtro->f = 35.0 / (2 * atan2f(4.2 * M_PI / 180, 2));  // Factor de conversión
 }
 
 void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
@@ -166,7 +166,7 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     // Velocidad
     // Queremos pasar la acel de cuerpo a mundo
     filtro->prov = quat_mult(filtro->qa_meas, quat_conjugate(filtro->q)); // prov = (filtro->qa_meas) * -q
-    filtro->prov2 = quat_mult(filtro->q, filtro->prov); // prov = q * (filtro->qa_meas) * -q
+    filtro->prov2 = quat_mult(filtro->q, filtro->prov); // prov2 = q * (filtro->qa_meas) * -q
     quat_sub(&filtro->prov, filtro->prov2, filtro->qg); // prov = q * (filtro->qa_meas) * -q - g
     quat2vec(filtro->prov, filtro->temp); //temp = prov
     vecmul_scalar(N_V, filtro->temp, u.dt); // temp = dt (a_meas - g)
@@ -174,8 +174,13 @@ void prediction_step(ofs_ekf_t* filtro, mediciones_t u){
     // Cuaterniones
     filtro->prov = quat_mult(filtro->q, filtro->qw_meas); // prov = qk * qw
     quat_scalar(&filtro->prov, u.dt / 2); // prov = (dt / 2) qk * qw
-    quat_add(&filtro->q, filtro->prov, filtro->q); // q = qk + (dt / 2) qk * qw
-    quat_Normalization(&filtro->q);
+    quat_add(&filtro->prov2, filtro->prov, filtro->q); // q = qk + (dt / 2) qk * qw
+    quat_Normalization(&filtro->prov2);
+    filtro->states[N_P + N_V] = filtro->prov2.q1;
+    filtro->states[N_P + N_V + 1] = filtro->prov2.q2;
+    filtro->states[N_P + N_V + 2] = filtro->prov2.q3;
+    filtro->states[N_P + N_V + 3] = filtro->prov2.q4;
+
 }
 
 void correction_step(ofs_ekf_t* filtro, mediciones_t* z){
@@ -318,25 +323,22 @@ void correction_step(ofs_ekf_t* filtro, mediciones_t* z){
     /* Mediciones predichas */
     // Aceleracion
     filtro->prov = quat_mult(filtro->qg, filtro->q); // prov = qg * qk (de mundo a cuerpo)
-    filtro->prov = quat_mult(quat_conjugate(filtro->q), filtro->prov); // prov = q- * qg * q (de mundo a cuerpo)
-    quat2vec(filtro->prov, filtro->exp_meas); // measurements = q- * qg * q
+    filtro->prov2 = quat_mult(quat_conjugate(filtro->q), filtro->prov); // prov = q- * qg * q (de mundo a cuerpo)
+    quat2vec(filtro->prov2, filtro->exp_meas); // measurements = q- * qg * q
     //Campo magnetico
     filtro->prov = quat_mult(filtro->qm, filtro->q); // prov = qm * qk (de mundo a cuerpo)
-    filtro->prov = quat_mult(quat_conjugate(filtro->q), filtro->prov); // prov = q- * qm * q (de mundo a cuerpo)
-    quat2vec(filtro->prov, &filtro->exp_meas[N_IMU]); // measurements = q- * qm * q
+    filtro->prov2 = quat_mult(quat_conjugate(filtro->q), filtro->prov); // prov = q- * qm * q (de mundo a cuerpo)
+    quat2vec(filtro->prov2, &filtro->exp_meas[N_IMU]); // measurements = q- * qm * q
     //Flujo optico
     filtro->prov = vec2quat(&filtro->states[N_P]); //Paso la velocidad respecto al mundo a quat para convertirlo a body
-    filtro->prov = quat_mult(filtro->prov, filtro->q); // prov = v * q
-    filtro->prov = quat_mult(quat_conjugate(filtro->q), filtro->prov); // prov = q- * v * q
+    filtro->prov2 = quat_mult(filtro->prov, filtro->q); // prov = v * q
+    filtro->prov = quat_mult(quat_conjugate(filtro->q), filtro->prov2); // prov = q- * v * q
     filtro->exp_meas[N_IMU + N_MAG + 0] = -(*z).dt * filtro->f * (filtro->prov.q2 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
                                          filtro->p[2]  + (*z).wy);
     filtro->exp_meas[N_IMU + N_MAG + 1] = -(*z).dt * filtro->f * (filtro->prov.q3 * (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1) / \
                                          filtro->p[2]  - (*z).wx);  
     //Distancia
     filtro->exp_meas[N_IMU + N_MAG + N_OFS] = filtro->p[2] / (2 * (pow(filtro->q.q1, 2) + pow(filtro->q.q4, 2)) - 1);
-
-    print_vector("Mediciones", N_OBS, filtro->meas);
-    print_vector("Mediciones esperadas", N_OBS, filtro->exp_meas);
 
     /* Paso secuencial para actualizacion de estados y covarianza */
     for (int i = 0; i < N_OBS; i++){
@@ -345,7 +347,7 @@ void correction_step(ofs_ekf_t* filtro, mediciones_t* z){
         mulvec(N_STATES, N_STATES, filtro->aux4, filtro->temp3, filtro->temp4); // temp4 = Pi * H[i][:].t
         vec_dot(N_STATES, filtro->temp3, filtro->temp4, &filtro->S); // S = H[i][:] * Pi * H[i][:].t
         filtro->S += filtro->R[i][i]; // S = H[i][:] * Pi * H[i][:].t + Ri
-        vecmul_scalar(N_STATES, filtro->temp4, 1 / filtro->S); //Ki = Pi * H[i][:].t / (H[i][:] * Pi * H[i][:].t)
+        vecmul_scalar(N_STATES, filtro->temp4, 1 / filtro->S); //Ki = Pi * H[i][:].t / (H[i][:] * Pi * H[i][:].t + Ri)
         // Correccion de estados
         vecmul_scalar2(N_STATES, filtro->temp4, filtro->temp5, filtro->meas[i] - filtro->exp_meas[i]); // temp5 = Ki * (y[i] - y_est[i])
         accum_vec(N_STATES, filtro->states, filtro->temp5); // states = states + Ki * (y[i] - y_est[i])
@@ -355,13 +357,29 @@ void correction_step(ofs_ekf_t* filtro, mediciones_t* z){
         vec_outer(N_STATES, filtro->temp4, filtro->temp3, filtro->aux2); // aux2 = Ki * H[i][:]
         mat_negate(N_STATES, N_STATES, filtro->aux2); // aux2 = -Ki * H[i][:]
         accum(N_STATES, N_STATES, filtro->aux3, filtro->aux2); //aux3 = I - Ki * H[i][:]
-        printf("Aca\n");
-        print_gain("cov", N_STATES, N_STATES, filtro->cov);
-        print_gain("I - K H", N_STATES, N_STATES, filtro->aux3);
+        //printf("Aca\n");
+        //print_gain("cov", N_STATES, N_STATES, filtro->cov);
+        //print_gain("I - K H", N_STATES, N_STATES, filtro->aux3);
         mulmat(N_STATES, N_STATES, N_STATES, filtro->aux3, filtro->aux4, filtro->cov); //cov = (I - Ki * H[i][:]) Pi
-        print_gain("cov", N_STATES, N_STATES, filtro->cov);
+        //print_gain("cov", N_STATES, N_STATES, filtro->cov);
         //print_gain("H", N_STATES, N_STATES, filtro->cov);
     }
+    /*
+    transpose(N_OBS, N_STATES, filtro->H, filtro->Ht); 
+    mulmat(N_STATES, N_STATES, N_OBS, filtro->cov, filtro->Ht, filtro->aux9); // aux9 = cov * Ht
+    mulmat(N_OBS, N_STATES, N_OBS, filtro->H, filtro->aux9, filtro->aux10); // aux10 = H * cov * Ht
+    accum(N_OBS, N_OBS, filtro->aux10, filtro->R); // aux10 = H * cov * Ht + R
+    //print_gain("(H * cov * Ht + R): ",N_OBS, N_OBS,  filtro->aux10);
+    cholsl(N_OBS, filtro->aux10, filtro->aux11, filtro->temp2); // aux11 = inv(H * cov * Ht + R)
+    //print_gain("inv(H * cov * Ht + R): ",N_OBS, N_OBS,  filtro->aux11);
+    mulmat(N_STATES, N_OBS, N_OBS, filtro->aux9, filtro->aux11, filtro->G); // G = cov * Ht * inv(H * cov * Ht + R) //TODO: EN VEZ DE 10 era 11
+    //print_gain("G: ", N_STATES, N_OBS,  filtro->G);
+    sub_vec(filtro->meas, filtro->exp_meas, filtro->temp2, N_OBS); // temp2 = z_medido - z_esperado
+    mulvec(N_STATES, N_OBS, filtro->G, filtro->temp2, filtro->temp3); // aux8 = G(z_medido - z_esperado)
+    //print_vector("Mediciones", N_OBS, filtro->meas);
+    //print_vector("Mediciones esperadas", N_OBS, filtro->exp_meas);
+    //print_vector("Innovacion", N_OBS, filtro->aux8);
+    accum_vec(N_STATES, filtro->states, filtro->temp3); // estado = estado + G(z_medido - z_esperado)*/
     // Normalizo q
     filtro->q.q1 = filtro->states[N_P + N_V + 0];
     filtro->q.q2 = filtro->states[N_P + N_V + 1];
@@ -372,7 +390,12 @@ void correction_step(ofs_ekf_t* filtro, mediciones_t* z){
     filtro->states[N_P + N_V + 1] = filtro->q.q2;
     filtro->states[N_P + N_V + 2] = filtro->q.q3;
     filtro->states[N_P + N_V + 3] = filtro->q.q4;
-
+    /*
+    mulmat(N_STATES, N_OBS, N_STATES, filtro->G, filtro->H, filtro->aux2); //  aux2 = G * H
+    mulmat(N_STATES, N_STATES, N_STATES, filtro->aux2, filtro->cov, filtro->aux3); // aux3 = G * H * cov_priori
+    mat_negate(N_STATES, N_STATES, filtro->aux3); // aux3 = - G * H * cov_priori
+    accum(N_STATES, N_STATES, filtro->cov, filtro->aux3); // cov = cov_priori - G * H * cov_priori
+    */
     if(filtro->states[2] < MIN_HEIGHT){
 	filtro->states[2] = MIN_HEIGHT;
     }

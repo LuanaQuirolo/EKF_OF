@@ -97,59 +97,45 @@ void mat_zeros(int m, int n, double a[m][n]){
 
 // Set all components from vector A to zero
 void vec_zeros(int n, double a[n]){
-    int j;
-
-    for(j=0; j<n; j++){
+    for(int j = 0; j < n; j++){
         a[j] = 0;
     }
 }
 
 /* C <- A * B */
-void mulmat(int arows, int acols, int bcols, double a[arows][acols], double b[acols][bcols], double c[arows][bcols])
-{
-    int i, j,l;
-
-    for(i=0; i<arows; i++)
-        for(j=0; j<bcols; j++) {
+void mulmat(int arows, int acols, int bcols, double a[arows][acols], double b[acols][bcols], double c[arows][bcols]){
+    for(int i = 0; i < arows; i++)
+        for(int j = 0; j < bcols; j++) {
             c[i][j] = 0;
-            for(l=0; l<acols; l++){
+            for(int l = 0; l < acols; l++){
                 c[i][j] += a[i][l] * b[l][j];
             }
         }
 }
 
 /* Y <- A * X */
-void mulvec(int m, int n, double a[m][n], double * x, double * y)
-{
-    int i, j;
-
-    for(i=0; i<m; i++) {
+void mulvec(int m, int n, double a[m][n], double * x, double * y){
+    for(int i = 0;  i <m; i++) {
         y[i] = 0;
-        for(j=0; j<n; j++){
+        for(int j = 0; j < n; j++){
             y[i] += x[j] * a[i][j];
         }
     }
 }
 
 /* trans(A) <- A */
-void transpose(int m, int n, double a[m][n], double at[n][m])
-{
-    int i,j;
-
-    for(i=0; i<m; i++){
-        for(j=0; j<n; j++) {
+void transpose(int m, int n, double a[m][n], double at[n][m]){
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++) {
             at[j][i] = a[i][j];
         }
     }
 }
 
 /* A <- A + B */
-void accum(int m, int n, double a[m][n], double b[m][n])
-{        
-    int i,j;
-
-    for(i=0; i<m; i++){
-        for(j=0; j<n; j++){
+void accum(int m, int n, double a[m][n], double b[m][n]){        
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++){
             a[i][j] += b[i][j];
         }
     }
@@ -157,9 +143,7 @@ void accum(int m, int n, double a[m][n], double b[m][n])
 
 /* A <- A + B */
 void accum_vec(int n, double * a, double * b){
-    int j;
-
-    for(j=0; j<n; j++){
+    for(int j = 0; j < n; j++){
         a[j] = a[j] + b[j];
     }
 }
@@ -257,6 +241,7 @@ void vec_outer(int n, double *a, double *b, double c[n][n]){
 /* C <- a * b */ 
 // Producto de vectores que produce un escalar
 void vec_dot(int n, double *a, double *b, double *c){
+    *c = 0;
     for(int i = 0; i < n; i++){
         *c += a[i] * b[i];
     }
@@ -269,7 +254,7 @@ void mat_getrow(int m, int n, double a[m][n], int row, double b[n]){
 }
 
 void mat_getcol(int m, int n, double a[m][n], int col, double b[m]){
-    for (int i = 0; i < n; i++){
+    for (int i = 0; i < m; i++){
         b[i] = a[i][col];
     }
 }
