@@ -20,7 +20,7 @@ quaternion_t quat_mult (struct quaternion L, struct quaternion R){
 }
 
 // Multiply a reference of a quaternion by a scalar, q = s*q
-void quat_scalar(struct quaternion * q, float scalar){
+void quat_scalar(struct quaternion * q, double scalar){
     q -> q1 *= scalar;
     q -> q2 *= scalar;
     q -> q3 *= scalar;
@@ -54,14 +54,14 @@ quaternion_t quat_conjugate(struct quaternion q){
 // norm of a quaternion is the same as a complex number
 // sqrt( q1^2 + q2^2 + q3^2 + q4^2)
 // the norm is also the sqrt(q * conjugate(q)), but thats a lot of operations in the quaternion multiplication
-float quat_Norm (quaternion_t q)
+double quat_Norm (quaternion_t q)
 {
     return sqrt(q.q1*q.q1 + q.q2*q.q2 + q.q3*q.q3 +q.q4*q.q4);
 }
 
 // Normalizes pointer q by calling quat_Norm(q),
 void quat_Normalization(struct quaternion * q){
-    float norm = quat_Norm(*q);
+    double norm = quat_Norm(*q);
     q -> q1 /= norm;
     q -> q2 /= norm;
     q -> q3 /= norm;

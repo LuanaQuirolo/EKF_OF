@@ -12,15 +12,15 @@
    http://jean-pierre.moreau.pagesperso-orange.fr/Cplus/choles_cpp.txt */
 
 
-int choldc1(double * a, double * p, int n) {
+int choldc1(int n, double a[n][n], double * p){
     int i,j,k;
     double sum;
 
     for (i = 0; i < n; i++) {
         for (j = i; j < n; j++) {
-            sum = a[i*n+j];
+            sum = a[i][j];
             for (k = i - 1; k >= 0; k--) {
-                sum -= a[i*n+k] * a[j*n+k];
+                sum -= a[i][k] * a[j][k];
             }
             if (i == j) {
                 if (sum <= 0) {
@@ -29,7 +29,7 @@ int choldc1(double * a, double * p, int n) {
                 p[i] = sqrt(sum);
             }
             else {
-                a[j*n+i] = sum / p[i];
+                a[j][i] = sum / p[i];
             }
         }
     }
@@ -37,21 +37,20 @@ int choldc1(double * a, double * p, int n) {
     return 0; /* success */
 }
 
-int choldcsl(double * A, double * a, double * p, int n) 
-{
+int choldcsl(int n, double A[n][n], double a[n][n], double * p){
     int i,j,k; double sum;
     for (i = 0; i < n; i++) 
         for (j = 0; j < n; j++) 
-            a[i*n+j] = A[i*n+j];
-    if (choldc1(a, p, n)) return 1;
+            a[i][j] = A[i][j];
+    if (choldc1(n, a, p)) return 1;
     for (i = 0; i < n; i++) {
-        a[i*n+i] = 1 / p[i];
+        a[i][i] = 1 / p[i];
         for (j = i + 1; j < n; j++) {
             sum = 0;
             for (k = i; k < j; k++) {
-                sum -= a[j*n+k] * a[k*n+i];
+                sum -= a[j][k] * a[k][i];
             }
-            a[j*n+i] = sum / p[j];
+            a[j][i] = sum / p[j];
         }
     }
 
@@ -59,29 +58,28 @@ int choldcsl(double * A, double * a, double * p, int n)
 }
 
 
-int cholsl(double * A, double * a, double * p, int n) 
-{
+int cholsl(int n, double A[n][n], double a[n][n], double * p){
     int i,j,k;
-    if (choldcsl(A,a,p,n)) return 1;
+    if (choldcsl(n,A,a,p)) return 1;
     for (i = 0; i < n; i++) {
         for (j = i + 1; j < n; j++) {
-            a[i*n+j] = 0.0;
+            a[i][j] = 0.0;
         }
     }
     for (i = 0; i < n; i++) {
-        a[i*n+i] *= a[i*n+i];
+        a[i][i] *= a[i][i];
         for (k = i + 1; k < n; k++) {
-            a[i*n+i] += a[k*n+i] * a[k*n+i];
+            a[i][i] += a[k][i] * a[k][i];
         }
         for (j = i + 1; j < n; j++) {
             for (k = j; k < n; k++) {
-                a[i*n+j] += a[k*n+i] * a[k*n+j];
+                a[i][j] += a[k][i] * a[k][j];
             }
         }
     }
     for (i = 0; i < n; i++) {
         for (j = 0; j < i; j++) {
-            a[i*n+j] = a[j*n+i];
+            a[i][j] = a[j][i];
         }
     }
 
@@ -89,113 +87,189 @@ int cholsl(double * A, double * a, double * p, int n)
 }
 
 // Set all components from matrix A to zero
-void mat_zeros(double * a, int m, int n)
-{
+void mat_zeros(int m, int n, double a[m][n]){
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++) {
+            a[i][j] = 0;
+        }
+    }
+}
+
+// Set all components from vector A to zero
+void vec_zeros(int n, double a[n]){
     int j;
-    for (j=0; j<m*n; ++j)
+
+    for(j=0; j<n; j++){
         a[j] = 0;
+    }
 }
 
 /* C <- A * B */
-void mulmat(double * a, double * b, double * c, int arows, int acols, int bcols)
+void mulmat(int arows, int acols, int bcols, double a[arows][acols], double b[acols][bcols], double c[arows][bcols])
 {
     int i, j,l;
 
-    for(i=0; i<arows; ++i)
-        for(j=0; j<bcols; ++j) {
-            c[i*bcols+j] = 0;
-            for(l=0; l<acols; ++l)
-                c[i*bcols+j] += a[i*acols+l] * b[l*bcols+j];
+    for(i=0; i<arows; i++)
+        for(j=0; j<bcols; j++) {
+            c[i][j] = 0;
+            for(l=0; l<acols; l++){
+                c[i][j] += a[i][l] * b[l][j];
+            }
         }
 }
 
 /* Y <- A * X */
-void mulvec(double * a, double * x, double * y, int m, int n)
+void mulvec(int m, int n, double a[m][n], double * x, double * y)
 {
     int i, j;
 
-    for(i=0; i<m; ++i) {
+    for(i=0; i<m; i++) {
         y[i] = 0;
-        for(j=0; j<n; ++j)
-            y[i] += x[j] * a[i*n+j];
+        for(j=0; j<n; j++){
+            y[i] += x[j] * a[i][j];
+        }
     }
 }
 
 /* trans(A) <- A */
-void transpose(double * a, double * at, int m, int n)
+void transpose(int m, int n, double a[m][n], double at[n][m])
 {
     int i,j;
 
-    for(i=0; i<m; ++i)
-        for(j=0; j<n; ++j) {
-            at[j*m+i] = a[i*n+j];
+    for(i=0; i<m; i++){
+        for(j=0; j<n; j++) {
+            at[j][i] = a[i][j];
         }
+    }
 }
 
 /* A <- A + B */
-void accum(double * a, double * b, int m, int n)
+void accum(int m, int n, double a[m][n], double b[m][n])
 {        
     int i,j;
 
-    for(i=0; i<m; ++i)
-        for(j=0; j<n; ++j)
-            a[i*n+j] += b[i*n+j];
+    for(i=0; i<m; i++){
+        for(j=0; j<n; j++){
+            a[i][j] += b[i][j];
+        }
+    }
+}
+
+/* A <- A + B */
+void accum_vec(int n, double * a, double * b){
+    int j;
+
+    for(j=0; j<n; j++){
+        a[j] = a[j] + b[j];
+    }
 }
 
 /* C <- A + B */
-void add(double * a, double * b, double * c, int m, int n)
-{
-    int i,j;
-
-    for(i=0; i<m; ++i)
-        for(j=0; j<n; ++j)
-            c[i*n+j] = b[i*n+j] + a[i*n+j];
+void add(int m, int n, double a[m][n], double b[m][n], double c[m][n]){
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++){
+            c[i][j] = b[i][j] + a[i][j];
+        }
+    }
 }
 
+/* C <- A + B */
+void add_vec(int n, double * a, double * b, double * c){
+    for(int j = 0; j < n; j++){
+        c[j] = a[j] + b[j];
+    }
+}
 
 /* C <- A - B */
-void sub(double * a, double * b, double * c, int n)
-{
-    int j;
-
-    for(j=0; j<n; ++j)
-        c[j] = a[j] - b[j];
+void sub_vec(double * a, double * b, double * c, int n){
+    for(int j = 0; j < n; j++){
+        c[j] =  a[j] - b[j];
+    }    
 }
 
 /* -A <- A */
-void mat_negate(double * a, int m, int n)
-{        
-    int i, j;
-
-    for(i=0; i<m; ++i)
-        for(j=0; j<n; ++j)
-            a[i*n+j] = -a[i*n+j];
+void mat_negate(int m, int n, double a[m][n]){        
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++){
+            a[i][j] = -a[i][j];
+        }
+    }
 }
 
 /* A + I <- A */
-void mat_addeye(double * a, int n)
-{
-    int i;
-    for (i=0; i<n; ++i)
-        a[i*n+i] += 1;
+void  mat_addeye(int n, double a[n][n]){
+    for (int i = 0; i < n; i++){
+        a[i][i] += 1;
+    }
+}
+
+/* B <- A */
+void  mat_copy(int m, int n, double a[m][n], double b[m][n]){
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++){
+            b[i][j] = a[i][j];
+        }
+    }
 }
 
 /* bA <- A */
-void matmul_scalar(double * a, int m, int n, double b)
-{        
-    int i, j;
-
-    for(i=0; i<m; ++i)
-        for(j=0; j<n; ++j)
-            a[i*n+j] = b * a[i*n+j];
+void matmul_scalar(int m, int n, double a[m][n], double b){        
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++){
+            a[i][j] = b * a[i][j];
+        }
+    }
 }
 
 /* C <- bA */
-void matmul_scalar2(double * a, double * c, int m, int n, double b)
-{        
-    int i, j;
+void matmul_scalar2(int m, int n, double a[m][n], double c[m][n], double b){        
+    for(int i = 0; i < m; i++){
+        for(int j = 0; j < n; j++){
+            c[i][j] = b * a[i][j];
+        }
+    }
+}
 
-    for(i=0; i<m; ++i)
-        for(j=0; j<n; ++j)
-            c[i*n+j] = b * a[i*n+j];
+/* bA <- A */
+void vecmul_scalar(int n, double *a, double b){        
+    for(int i = 0; i < n; i++){
+        a[i] = b * a[i];
+    }
+}
+
+/* C <- bA */
+void vecmul_scalar2(int n, double *a, double *c, double b){        
+    for(int i = 0; i < n; i++){
+        c[i] = b * a[i];
+    }
+}
+
+/* C <- a * b */ 
+// Producto de vectores que produce una matriz
+void vec_outer(int n, double *a, double *b, double c[n][n]){
+    for(int i = 0; i < n; i++){
+        for(int j = 0; j < n; j++){
+            c[i][j] = a[i] * b[j];
+        }
+    }
+}
+
+/* C <- a * b */ 
+// Producto de vectores que produce un escalar
+void vec_dot(int n, double *a, double *b, double *c){
+    for(int i = 0; i < n; i++){
+        *c += a[i] * b[i];
+    }
+}
+
+void mat_getrow(int m, int n, double a[m][n], int row, double b[n]){
+    for (int i = 0; i < n; i++){
+        b[i] = a[row][i];
+    }
+}
+
+void mat_getcol(int m, int n, double a[m][n], int col, double b[m]){
+    for (int i = 0; i < n; i++){
+        b[i] = a[i][col];
+    }
 }

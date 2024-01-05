@@ -22,7 +22,7 @@ typedef struct quaternion{
 quaternion_t quat_mult (struct quaternion L, struct quaternion R);
 
 // Multiply a reference of a quaternion by a scalar, q = s*q
-void quat_scalar(struct quaternion * q, float scalar);
+void quat_scalar(struct quaternion * q, double scalar);
 
 // Adds two quaternions together and the sum is the pointer to another quaternion, Sum = L + R
 void quat_add(struct quaternion * Sum, struct quaternion L, struct quaternion R);
@@ -36,7 +36,7 @@ quaternion_t quat_conjugate(struct quaternion q);
 // norm of a quaternion is the same as a complex number
 // sqrt( q1^2 + q2^2 + q3^2 + q4^2)
 // the norm is also the sqrt(q * conjugate(q)), but thats a lot of operations in the quaternion multiplication
-float quat_Norm (quaternion_t q);
+double quat_Norm (quaternion_t q);
 
 // Normalizes pointer q by calling quat_Norm(q),
 void quat_Normalization(struct quaternion * q);
