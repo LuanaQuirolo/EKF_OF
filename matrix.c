@@ -144,7 +144,7 @@ void accum(int m, int n, double a[m][n], double b[m][n]){
 /* A <- A + B */
 void accum_vec(int n, double * a, double * b){
     for(int j = 0; j < n; j++){
-        a[j] = a[j] + b[j];
+        a[j] += b[j];
     }
 }
 
