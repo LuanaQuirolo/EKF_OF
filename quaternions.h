@@ -56,4 +56,14 @@ void quat2vec(quaternion_t q, double* vector);
  */
 void eulerAngles(struct quaternion q, float* roll, float* pitch, float* yaw);
 
+/*
+Secuencia XYZ. Se asumen angulos en radianes
+ returns as pointers, roll pitch and yaw from the quaternion
+ Assume right hand system
+ Roll is about the x axis, represented as phi
+ Pitch is about the y axis, represented as theta
+ Yaw is about the z axis, represented as psi 
+ */
+void quat_euler(struct quaternion *q, float* roll, float* pitch, float* yaw);
+
 #endif /* QUATERNIONS_H_ */

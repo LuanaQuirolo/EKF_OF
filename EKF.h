@@ -20,12 +20,15 @@
 #define N_STATES N_P+N_V+N_Q // La cantidad de estados total es la suma de sus componentes
 #define N_PROC_NOISE 7 // a, w
 #define N_OBS 9 // a, mag, of, range
-#define U_P_A pow(0.01, 2) // Ruido proceso acelerometro
-#define U_P_W pow(0.001, 2) // Ruido proceso giroscopio
-#define U_A pow(0.01, 2) // Ruido medicion acelerometro
-#define U_FLOW pow(0.2, 2) // Ruido medicion flujo optico
-#define U_RANGE pow(0.0001, 2) // Ruido medicion distancia
-#define U_MAG pow(0.0001, 2) // Ruido medicion magnetometro
+#define U_P_A pow(0.157, 2) // Ruido proceso acelerometro
+#define U_P_W pow(0.0167, 2) // Ruido proceso giroscopio
+#define U_A pow(0.157, 2) // Ruido medicion acelerometro
+#define U_FLOWX pow(0.3888, 2) // Ruido medicion flujo optico
+#define U_FLOWY pow(0.6861, 2) // Ruido medicion flujo optico
+#define U_RANGE pow(0.00308, 2) // Ruido medicion distancia
+#define U_MAGX pow(0.01145, 2) // Ruido medicion magnetometro
+#define U_MAGY pow(0.008894, 2) // Ruido medicion magnetometro
+#define U_MAGZ pow(0.00585, 2) // Ruido medicion magnetometro
 #define N_IMU 3 // Para el paso de correccion, en realidad son 6 mediciones
 #define N_MAG 3
 #define N_OFS 2
@@ -87,12 +90,19 @@ typedef struct ofs_ekf {
     double v_aux3[N_STATES];
     double v_aux4[N_OBS];
     double meas[N_OBS];
+    double v_aux5[N_STATES]; //TODO BORRAR
+    double v_aux6[N_STATES]; //TODO BORRAR
+    double m_aux8[N_STATES][N_STATES]; //TODO BORRAR
+    double S;//TODO BORRAR
     /* Cuaterniones temporales */
     quaternion_t q_aux;
     quaternion_t q_aux2;
 } ofs_ekf_t; 
 
-  void ofs_ekf_init(ofs_ekf_t* filtro, double m[N_MAG], double a[N_IMU], double z);
+/* Inicializa el filtro.
+* Pre: Debe haber mediciones de la IMU, el magnetometro y el sensor de distancia.
+* Pos: Se crean las matrices pertinentes y los estados se inicializan con los valores dados por las mediciones. */
+  void ofs_ekf_init(ofs_ekf_t* filtro, mediciones_t *meas);
 
 /* Realiza el paso de prediccion. Es decir, propaga la accion de control.
 * Pre: El filtro debe estar inicializado.
