@@ -12,24 +12,24 @@
    http://jean-pierre.moreau.pagesperso-orange.fr/Cplus/choles_cpp.txt */
 
 
-int choldc1(int n, double a[n][n], double * p){
+int choldc1(int n, float a[n][n], float * p){
     int i,j,k;
-    double sum;
+    float sum;
 
     for (i = 0; i < n; i++) {
         for (j = i; j < n; j++) {
             sum = a[i][j];
             for (k = i - 1; k >= 0; k--) {
-                sum -= a[i][k] * a[j][k];
+                sum -= (float)a[i][k] * a[j][k];
             }
             if (i == j) {
                 if (sum <= 0) {
                     return 1; /* error */
                 }
-                p[i] = sqrt(sum);
+                p[i] = (float)sqrtf((float)sum);
             }
             else {
-                a[j][i] = sum / p[i];
+                a[j][i] = (float)sum / p[i];
             }
         }
     }
@@ -37,20 +37,20 @@ int choldc1(int n, double a[n][n], double * p){
     return 0; /* success */
 }
 
-int choldcsl(int n, double A[n][n], double a[n][n], double * p){
-    int i,j,k; double sum;
+int choldcsl(int n, float A[n][n], float a[n][n], float * p){
+    int i,j,k; float sum;
     for (i = 0; i < n; i++) 
         for (j = 0; j < n; j++) 
-            a[i][j] = A[i][j];
+            a[i][j] = (float)A[i][j];
     if (choldc1(n, a, p)) return 1;
     for (i = 0; i < n; i++) {
-        a[i][i] = 1 / p[i];
+        a[i][i] = (float)1 / p[i];
         for (j = i + 1; j < n; j++) {
             sum = 0;
             for (k = i; k < j; k++) {
                 sum -= a[j][k] * a[k][i];
             }
-            a[j][i] = sum / p[j];
+            a[j][i] = (float)sum / p[j];
         }
     }
 
@@ -58,7 +58,7 @@ int choldcsl(int n, double A[n][n], double a[n][n], double * p){
 }
 
 
-int cholsl(int n, double A[n][n], double a[n][n], double * p){
+int cholsl(int n, float A[n][n], float a[n][n], float * p){
     int i,j,k;
     if (choldcsl(n,A,a,p)) return 1;
     for (i = 0; i < n; i++) {
@@ -87,174 +87,174 @@ int cholsl(int n, double A[n][n], double a[n][n], double * p){
 }
 
 // Set all components from matrix A to zero
-void mat_zeros(int m, int n, double a[m][n]){
+void mat_zeros(int m, int n, float a[m][n]){
     for(int i = 0; i < m; i++){
         for(int j = 0; j < n; j++) {
-            a[i][j] = 0;
+            a[i][j] = 0.0f;
         }
     }
 }
 
 // Set all components from vector A to zero
-void vec_zeros(int n, double a[n]){
+void vec_zeros(int n, float a[n]){
     for(int j = 0; j < n; j++){
-        a[j] = 0;
+        a[j] = 0.0f;
     }
 }
 
 /* C <- A * B */
-void mulmat(int arows, int acols, int bcols, double a[arows][acols], double b[acols][bcols], double c[arows][bcols]){
+void mulmat(int arows, int acols, int bcols, float a[arows][acols], float b[acols][bcols], float c[arows][bcols]){
     for(int i = 0; i < arows; i++)
         for(int j = 0; j < bcols; j++) {
             c[i][j] = 0;
             for(int l = 0; l < acols; l++){
-                c[i][j] += a[i][l] * b[l][j];
+                c[i][j] +=  (float)a[i][l] * b[l][j];
             }
         }
 }
 
 /* Y <- A * X */
-void mulvec(int m, int n, double a[m][n], double * x, double * y){
+void mulvec(int m, int n, float a[m][n], float * x, float * y){
     for(int i = 0;  i <m; i++) {
-        y[i] = 0;
+        y[i] = 0.0f;
         for(int j = 0; j < n; j++){
-            y[i] += x[j] * a[i][j];
+            y[i] += (float) x[j] * a[i][j];
         }
     }
 }
 
 /* trans(A) <- A */
-void transpose(int m, int n, double a[m][n], double at[n][m]){
+void transpose(int m, int n, float a[m][n], float at[n][m]){
     for(int i = 0; i < m; i++){
         for(int j = 0; j < n; j++) {
-            at[j][i] = a[i][j];
+            at[j][i] =  (float)a[i][j];
         }
     }
 }
 
 /* A <- A + B */
-void accum(int m, int n, double a[m][n], double b[m][n]){        
+void accum(int m, int n, float a[m][n], float b[m][n]){        
     for(int i = 0; i < m; i++){
         for(int j = 0; j < n; j++){
-            a[i][j] += b[i][j];
+            a[i][j] += (float)b[i][j];
         }
     }
 }
 
 /* A <- A + B */
-void accum_vec(int n, double * a, double * b){
+void accum_vec(int n, float * a, float * b){
     for(int j = 0; j < n; j++){
-        a[j] += b[j];
+        a[j] +=(float) b[j];
     }
 }
 
 /* C <- A + B */
-void add(int m, int n, double a[m][n], double b[m][n], double c[m][n]){
+void add(int m, int n, float a[m][n], float b[m][n], float c[m][n]){
     for(int i = 0; i < m; i++){
         for(int j = 0; j < n; j++){
-            c[i][j] = b[i][j] + a[i][j];
+            c[i][j] = (float)b[i][j] + a[i][j];
         }
     }
 }
 
 /* C <- A + B */
-void add_vec(int n, double * a, double * b, double * c){
+void add_vec(int n, float * a, float * b, float * c){
     for(int j = 0; j < n; j++){
-        c[j] = a[j] + b[j];
+        c[j] =(float) a[j] +  (float)b[j];
     }
 }
 
 /* C <- A - B */
-void sub_vec(double * a, double * b, double * c, int n){
+void sub_vec(float * a, float * b, float * c, int n){
     for(int j = 0; j < n; j++){
-        c[j] =  a[j] - b[j];
+        c[j] = (float) a[j] -  (float)b[j];
     }    
 }
 
 /* -A <- A */
-void mat_negate(int m, int n, double a[m][n]){        
+void mat_negate(int m, int n, float a[m][n]){        
     for(int i = 0; i < m; i++){
         for(int j = 0; j < n; j++){
-            a[i][j] = -a[i][j];
+            a[i][j] = (float)-a[i][j];
         }
     }
 }
 
 /* A + I <- A */
-void  mat_addeye(int n, double a[n][n]){
+void  mat_addeye(int n, float a[n][n]){
     for (int i = 0; i < n; i++){
-        a[i][i] += 1;
+        a[i][i] += (float)1.0f;
     }
 }
 
 /* B <- A */
-void  mat_copy(int m, int n, double a[m][n], double b[m][n]){
+void  mat_copy(int m, int n, float a[m][n], float b[m][n]){
     for(int i = 0; i < m; i++){
         for(int j = 0; j < n; j++){
-            b[i][j] = a[i][j];
+            b[i][j] =(float) a[i][j];
         }
     }
 }
 
 /* bA <- A */
-void matmul_scalar(int m, int n, double a[m][n], double b){        
+void matmul_scalar(int m, int n, float a[m][n], float b){        
     for(int i = 0; i < m; i++){
         for(int j = 0; j < n; j++){
-            a[i][j] = b * a[i][j];
+            a[i][j] =(float) b * a[i][j];
         }
     }
 }
 
 /* C <- bA */
-void matmul_scalar2(int m, int n, double a[m][n], double c[m][n], double b){        
+void matmul_scalar2(int m, int n, float a[m][n], float c[m][n], float b){        
     for(int i = 0; i < m; i++){
         for(int j = 0; j < n; j++){
-            c[i][j] = b * a[i][j];
+            c[i][j] =(float) b * a[i][j];
         }
     }
 }
 
 /* bA <- A */
-void vecmul_scalar(int n, double *a, double b){        
+void vecmul_scalar(int n, float *a, float b){        
     for(int i = 0; i < n; i++){
-        a[i] = b * a[i];
+        a[i] = (float)b * a[i];
     }
 }
 
 /* C <- bA */
-void vecmul_scalar2(int n, double *a, double *c, double b){        
+void vecmul_scalar2(int n, float *a, float *c, float b){        
     for(int i = 0; i < n; i++){
-        c[i] = b * a[i];
+        c[i] = (float)b * a[i];
     }
 }
 
 /* C <- a * b */ 
 // Producto de vectores que produce una matriz
-void vec_outer(int n, double *a, double *b, double c[n][n]){
+void vec_outer(int n, float *a, float *b, float c[n][n]){
     for(int i = 0; i < n; i++){
         for(int j = 0; j < n; j++){
-            c[i][j] = a[i] * b[j];
+            c[i][j] = (float)a[i] * b[j];
         }
     }
 }
 
 /* C <- a * b */ 
 // Producto de vectores que produce un escalar
-void vec_dot(int n, double *a, double *b, double *c){
+void vec_dot(int n, float *a, float *b, float *c){
     *c = 0;
     for(int i = 0; i < n; i++){
-        *c += a[i] * b[i];
+        *c += (float)a[i] * b[i];
     }
 }
 
-void mat_getrow(int m, int n, double a[m][n], int row, double b[n]){
+void mat_getrow(int m, int n, float a[m][n], int row, float b[n]){
     for (int i = 0; i < n; i++){
-        b[i] = a[row][i];
+        b[i] = (float)a[row][i];
     }
 }
 
-void mat_getcol(int m, int n, double a[m][n], int col, double b[m]){
+void mat_getcol(int m, int n, float a[m][n], int col, float b[m]){
     for (int i = 0; i < m; i++){
-        b[i] = a[i][col];
+        b[i] = (float)a[i][col];
     }
 }

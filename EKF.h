@@ -20,80 +20,93 @@
 #define N_STATES N_P+N_V+N_Q // La cantidad de estados total es la suma de sus componentes
 #define N_PROC_NOISE 7 // a, w
 #define N_OBS 9 // a, mag, of, range
-#define U_P_A pow(0.157, 2) // Ruido proceso acelerometro
-#define U_P_W pow(0.0167, 2) // Ruido proceso giroscopio
-#define U_A pow(0.157, 2) // Ruido medicion acelerometro
-#define U_FLOWX pow(0.3888, 2) // Ruido medicion flujo optico
-#define U_FLOWY pow(0.6861, 2) // Ruido medicion flujo optico
-#define U_RANGE pow(0.00308, 2) // Ruido medicion distancia
-#define U_MAGX pow(0.01145, 2) // Ruido medicion magnetometro
-#define U_MAGY pow(0.008894, 2) // Ruido medicion magnetometro
-#define U_MAGZ pow(0.00585, 2) // Ruido medicion magnetometro
+//#define U_P_A pow(0.1684, 2) // Ruido proceso acelerometro
+//#define U_P_W pow(0.0081, 2) // Ruido proceso giroscopio
+//#define U_A pow(0.1684, 2) // Ruido medicion acelerometro
+//#define U_MAGX pow(0.017335, 2) // Ruido medicion magnetometro
+//#define U_MAGY pow(0.017335, 2) // Ruido medicion magnetometro
+//#define U_MAGZ pow(0.017335, 2) // Ruido medicion magnetometro
+//#define U_FLOWX pow(0.3, 2) // Ruido medicion flujo optico
+//#define U_FLOWY pow(0.3, 2) // Ruido medicion flujo optico
+//#define U_RANGE pow(0.00378, 2) // Ruido medicion distancia
+#define U_P_AX pow(0.1077325 * 10, 2) // Ruido proceso acelerometro
+#define U_P_AY pow(0.05719302 * 10, 2) // Ruido proceso acelerometro
+#define U_P_AZ pow(0.099542 * 10, 2) // Ruido proceso acelerometro
+#define U_P_W pow(0.009790 * 10, 2) // Ruido proceso giroscopio
+#define U_AX pow(0.1077325 * 50, 2) // Ruido medicion acelerometro
+#define U_AY pow(0.05719302 * 50, 2) // Ruido medicion acelerometro
+#define U_AZ pow(0.099542 * 50, 2) // Ruido medicion acelerometro
+#define U_MAGX pow(0.0069378 * 50, 2) // Ruido medicion magnetometro
+#define U_MAGY pow(0.0081201 * 50, 2) // Ruido medicion magnetometro
+#define U_MAGZ pow(0.0073688 * 50, 2) // Ruido medicion magnetometro
+#define U_FLOWX pow(0.093590 * 10, 2) // Ruido medicion flujo optico
+#define U_FLOWY pow(0.12671 * 10, 2) // Ruido medicion flujo optico
+#define U_RANGE pow(0.0187136 * 1, 2) // Ruido medicion distancia
 #define N_IMU 3 // Para el paso de correccion, en realidad son 6 mediciones
 #define N_MAG 3
 #define N_OFS 2
 #define N_TOFS 1
 #define g 9.81
 #define MIN_HEIGHT 0.04
-#define MAX_HEIGHT 600
+#define MAX_HEIGHT 600000
 
 typedef struct mediciones{
-  double dt;
-  double ax;
-  double ay;
-  double az;
-  double wx;
-  double wy;
-  double wz;
-  double mx;
-  double my;
-  double mz;
-  double ofx;
-  double ofy;
-  double range;
+  float dt;
+  float ax;
+  float ay;
+  float az;
+  float wx;
+  float wy;
+  float wz;
+  float mx;
+  float my;
+  float mz;
+  float ofx;
+  float ofy;
+  float range;
   } mediciones_t;
 
 /***************************************************************
  * 				   DEFINICION ESTRUCTURA OFS_EKF
  ***************************************************************/
 typedef struct ofs_ekf {
-    double states[N_STATES]; //p, v, q
-    double exp_meas[N_OBS]; //a, w, flow, z
-    double cov[N_STATES][N_STATES]; // Matriz de covarianza de estados
-    double F[N_STATES][N_STATES]; // Derivada de vector de estados respecto de si mismo
-    double H[N_OBS][N_STATES]; // Derivada de modelo de medicion respecto a los estados
-    double G[N_STATES][N_OBS]; // Ganancia de Kalman
-    double WQWt[N_STATES][N_STATES]; // Matriz W * Q * Wt
-    double R[N_OBS][N_OBS]; // Matriz ruidos mediciones
-    double m[N_MAG]; //Campo magnético inicial
-    double f;  // Factor de conversión
+    float states[N_STATES]; //p, v, q
+    float exp_meas[N_OBS]; //a, w, flow, z
+    float cov[N_STATES][N_STATES]; // Matriz de covarianza de estados
+    float F[N_STATES][N_STATES]; // Derivada de vector de estados respecto de si mismo
+    float H[N_OBS][N_STATES]; // Derivada de modelo de medicion respecto a los estados
+    float G[N_STATES][N_OBS]; // Ganancia de Kalman
+    float WQWt[N_STATES][N_STATES]; // Matriz W * Q * Wt
+    float R[N_OBS][N_OBS]; // Matriz ruidos mediciones
+    float m[N_MAG]; //Campo magnético inicial
+    float f;  // Factor de conversión
     /* Variables auxiliares */
     quaternion_t q; // Cuaternion para pasar de mundo a cuerpo, es parte de states
-    double p[N_P]; // Posicion, es parte de states
-    double v[N_V]; // Velocidad, es parte de states
+    float p[N_P]; // Posicion, es parte de states
+    float v[N_V]; // Velocidad, es parte de states
     quaternion_t qg;
     quaternion_t qm; 
     quaternion_t qa_meas;
     quaternion_t qw_meas;
     quaternion_t qm_meas;
     /* Matrices auxiliares */
-    double m_aux[N_PROC_NOISE][N_STATES];
-    double m_aux2[N_STATES][N_STATES];
-    double m_aux3[N_STATES][N_STATES];
-    double m_aux4[N_STATES][N_OBS];
-    double m_aux5[N_OBS][N_OBS];
-    double m_aux6[N_OBS][N_OBS];
-    double m_aux7[N_STATES][N_OBS];
+    float m_aux[N_PROC_NOISE][N_STATES];
+    float m_aux2[N_STATES][N_STATES];
+    float m_aux3[N_STATES][N_STATES];
+    float m_aux4[N_STATES][N_OBS];
+    float m_aux5[N_OBS][N_OBS];
+    float m_aux6[N_OBS][N_OBS];
+    float m_aux7[N_STATES][N_OBS];
     /* Vectores temporales */
-    double v_aux[N_V];
-    double v_aux2[N_V];
-    double v_aux3[N_STATES];
-    double v_aux4[N_OBS];
-    double meas[N_OBS];
-    double v_aux5[N_STATES]; //TODO BORRAR
-    double v_aux6[N_STATES]; //TODO BORRAR
-    double m_aux8[N_STATES][N_STATES]; //TODO BORRAR
-    double S;//TODO BORRAR
+    float v_aux[N_V];
+    float v_aux2[N_V];
+    float v_aux3[N_STATES];
+    float v_aux4[N_OBS];
+    float meas[N_OBS];
+    float v_aux5[N_STATES]; //TODO BORRAR
+    float v_aux6[N_STATES]; //TODO BORRAR
+    float m_aux8[N_STATES][N_STATES]; //TODO BORRAR
+    float S;//TODO BORRAR
     /* Cuaterniones temporales */
     quaternion_t q_aux;
     quaternion_t q_aux2;
@@ -119,5 +132,5 @@ typedef struct ofs_ekf {
 /* Calcula la traza de la covarianza
 * Pre: El filtro debe estar inicializado.
 * Pos: Devuelve la traza de la matriz de covarianza. */
-  double calc_trace_cov(ofs_ekf_t *filtro);
+  float calc_trace_cov(ofs_ekf_t *filtro);
 #endif /* EKF_H_ */

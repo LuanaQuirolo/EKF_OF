@@ -2,6 +2,7 @@
 #include "matrix.h"
 #include "ekf.h"
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
@@ -36,7 +37,7 @@ void print_measurements(mediciones_t meas){
 }
 
 void print_states(ofs_ekf_t filtro) {
-    float roll = 0.0, pitch = 0.0, yaw = 0.0;
+    float roll = 0.0f, pitch = 0.0f, yaw = 0.0f;
     printf("Posicion\n");
     for (int i = 0; i < N_P; i++) {
         printf("%f ", filtro.states[i]);
@@ -57,7 +58,7 @@ void print_states(ofs_ekf_t filtro) {
                        filtro.states[N_P + N_V + 2], filtro.states[N_P + N_V + 3]};
     eulerAngles(aux, &roll, &pitch, &yaw);
     printf("%f %f %f\n", roll, pitch, yaw);
-    double suma = 0;
+    float suma = 0.0f;
     for (int i = 0; i < N_STATES; i++) {
         suma += filtro.cov[i][i];
     }
@@ -76,14 +77,14 @@ void print_cov(ofs_ekf_t *filtro) {
 
 void print_trace_cov(ofs_ekf_t *filtro) {
     printf("Traza de covarianza\n");
-    double suma = 0;
+    float suma = 0;
     for (int i = 0; i < N_STATES; i++) {
         suma += filtro->cov[i][i];
     }
     printf("%f \n", suma);
 }
 
-void print_jac(double* jacobiano) {
+void print_jac(float* jacobiano) {
     printf("Jacobiano\n");
     for (int i = 0; i < N_OBS; i++) {
         for (int j = 0; j < N_STATES; j++) {
@@ -93,15 +94,24 @@ void print_jac(double* jacobiano) {
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     float roll, pitch, yaw;
     quaternion_t aux;
     char buffer_Tx_PC[256] = {0};
     char line[MAX_LINE_LENGTH];
-    double values[NUM_VALUES];
-
-    FILE * file_read = fopen("/Users/luana/Documents/Mediciones/rectangular.txt", "r"); // Reemplaza "datos.txt" por el nombre de tu archivo
-    FILE * file_write = fopen("/Users/luana/Documents/Mediciones/rectangular_procesado.txt", "w");
+    float values[NUM_VALUES];
+    char path_read[256] = "/Users/luana/Documents/Mediciones4/";
+    char path_write[256] = "/Users/luana/Documents/Mediciones4/";
+    char path_cov[256] = "/Users/luana/Documents/Mediciones4/";
+    strcat(path_read, argv[1]);
+    strcat(path_write, argv[1]);
+    strcat(path_cov, argv[1]);
+    strcat(path_read, ".txt");
+    strcat(path_write, "_procesado.txt");
+    strcat(path_cov, "_cov.txt");
+    FILE * file_read = fopen(path_read, "r"); // Reemplaza "datos.txt" por el nombre de tu archivo
+    FILE * file_write = fopen(path_write, "w");
+    FILE * file_cov = fopen(path_cov, "w");
     if (file_read == NULL) {
         perror("Error al abrir el archivo");
         return 1;
@@ -110,7 +120,10 @@ int main() {
         perror("Error al abrir el archivo");
         return 1;
     }
-
+    if (file_cov == NULL) {
+        perror("Error al abrir el archivo");
+        return 1;
+    }
     //Leo las primeras mediciones
     fgets(line, sizeof(line), file_read);
     char *token;
@@ -121,12 +134,11 @@ int main() {
         token = strtok(NULL, ", ");
     }
     ofs_ekf_t filtro;
-    //double temp[3] = {-189/1090.0, 313/1090.0, 12/1090.0};
-    values[10] = - values[10];
-    values[7] = ((values[7] * 1090 / 1.2  + 726) + 1120) * 1.03 / 1090;
-    values[8] = ((values[8] * 1090 / 1.48 - 588) + 1401) * 0.87/ 1090;
-    values[9] = ((values[9] * 1090 / 0.67 - 1302) - 1078) * 1.13 / 1090;
-    mediciones_t meas = {values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], (double)values[10], (double)values[11], values[13]}; //dt, ax, ay, az, wx, wy, wz, mx, my, mz, ofx, ofy, range
+    //float temp[3] = {-189/1090.0, 313/1090.0, 12/1090.0};
+    values[7] = (values[7] - 705.00) * 1.21f /1090.0f;//+ 178.0f) * 1.15f /1090.0f;// + 707) * 1.11 / 1090.0;
+    values[8] = (values[8] - 1228.00) * 0.83f /1090.0f;//- 1153.0f) * 0.9f /1090.0f;// - 1200) * 0.96 / 1090.0;
+    values[9] = (values[9] + 987.00) * 1.03f /1090.0f;//- 78.0f) * 0.98f /1090.0f;// + 117) * 0.95 / 1090.0;
+    mediciones_t meas = {values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], (float)values[10], (float)values[11], values[13]}; //dt, ax, ay, az, wx, wy, wz, mx, my, mz, ofx, ofy, range
     ofs_ekf_init(&filtro, &meas);
     print_states(filtro);
     srand(time(NULL));
@@ -147,19 +159,16 @@ int main() {
         meas.wx = values[4];
         meas.wy = values[5];
         meas.wz = values[6];
-        values[7] = ((values[7] * 1090 / 1.2  + 726) + 1120) * 1.03 / 1090;
-        values[8] = ((values[8] * 1090 / 1.48 - 588) + 1401) * 0.87/ 1090;
-        values[9] = ((values[9] * 1090 / 0.67 - 1302) - 1078) * 1.13 / 1090;
-        meas.mx = values[7];
-        meas.my = values[8];
-        meas.mz = values[9];
-        if(values[12] != 0){
-            meas.ofx = -(double)values[10];
-            meas.ofy =  (double)values[11];
+        meas.mx = (values[7] - 705.00) * 1.21f /1090.0f;//+ 178.0f) * 1.15f /1090.0f;// + 707) * 1.11 / 1090.0;
+        meas.my = (values[8] - 1228.00) * 0.83f /1090.0f;//- 1153.0f) * 0.9f /1090.0f;// - 1200) * 0.96 / 1090.0;
+        meas.mz = (values[9] + 987.00) * 1.03f /1090.0f;//- 78.0f) * 0.98f /1090.0f;// + 117) * 0.95 / 1090.0;
+        if(fabs(values[12]) > 25){
+            meas.ofx = (float)values[10];
+            meas.ofy = (float)values[11];
         }
         else{
-            meas.ofx = (double)0;
-            meas.ofy =  (double)0;
+            meas.ofx = 0.0f;
+            meas.ofy =  0.0f;
         }
         meas.range = values[13];
         //print_measurements(meas);
@@ -172,15 +181,19 @@ int main() {
         aux.q3 = filtro.states[N_P + N_V + 2];
         aux.q4 = filtro.states[N_P + N_V + 3];
         eulerAngles(aux, &roll, &pitch, &yaw);
-        fprintf(file_write, "%lf %s %lf %s %lf %s %lf %s %lf %s %lf %s %lf %s %lf %s %lf %s %lf %s %lf \n", meas.dt, ", ", filtro.states[0], ", ", filtro.states[1], ", ", filtro.states[2], ", ",  //Posicion x, y, z
+        fprintf(file_write, "%.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f \n", meas.dt, ", ", filtro.states[0], ", ", filtro.states[1], ", ", filtro.states[2], ", ",  //Posicion x, y, z
 			  filtro.states[3], ", ", filtro.states[4], ", ", filtro.states[5], ", ",  // Velocidad vx, vy, vz
 			  roll, ", ", pitch, ", ", yaw, ", ", calc_trace_cov(&filtro)); 
-        print_states(filtro);
+        fprintf(file_cov, "%.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f %s %.6f \n", filtro.cov[0][0], ", ", filtro.cov[1][1], ", ", filtro.cov[2][2], ", ",
+                filtro.cov[3][3], ", ", filtro.cov[4][4], ", ", filtro.cov[5][5], ", ",
+                filtro.cov[6][6], ", ", filtro.cov[7][7], ", ", filtro.cov[8][8], ", ", filtro.cov[9][9]); 
+        //print_states(filtro);
         //print_expected_measurements(filtro);
         //print_trace_cov(&filtro);
         //printf("----------------------------------------\n");
     }
     fclose(file_read);
     fclose(file_write);
+    fclose(file_cov);
     return 0;
 }

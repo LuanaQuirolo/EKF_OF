@@ -1,10 +1,10 @@
 #pip install pyserial
 import serial
 
-file_path = '/Users/luana/Documents/Mediciones/rot_yaw_360.txt'  # Ruta del archivo donde se guardarán los datos
+file_path = '/Users/luana/Desktop/tiempos.txt'  # Ruta del archivo donde se guardarán los datos
 
 # Configura la conexión serial con los parámetros apropiados
-ser = serial.Serial('/dev/cu.usbserial-1240', 115200)
+ser = serial.Serial('/dev/cu.usbserial-0001', 57600)
 
 try:
     with open(file_path, 'a') as file:
@@ -19,3 +19,4 @@ try:
                 file.write(data + '\n') # Escribe los datos en el archivo
 except KeyboardInterrupt:
     ser.close()  # Cierra la conexión serial al interrumpir el programa con Ctrl+C
+
